@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Compile & Package Cigarette V1
+  build-legacy-189:
+    name: Build MC 1.8.9 (Forge)
     runs-on: ubuntu-latest
 
     permissions:
@@ -31,26 +31,72 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
 
-      - name: Setup Gradle Cache
+      - name: Setup Gradle Cache (1.8.9)
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-189-${{ hashFiles('build.gradle', 'settings.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-gradle-189-
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew
 
-      - name: Build Cigarette V1 Jar
+      - name: Build 1.8.9 Forge Jar
         run: ./gradlew setupCiWorkspace clean build --no-daemon --stacktrace
 
-      - name: Upload Compiled Jar Artifact
+      - name: Upload 1.8.9 Forge Artifact
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: Cigarette-V1-Artifacts
-          path: build/libs/*.jar
+          name: Cigarette-V1-1.8.9-Forge
+          path: build/libs/Cigarette-V1-*.jar
+          if-no-files-found: error
+          retention-days: 14
+
+  build-modern-263:
+    name: Build MC 26.3 (Fabric)
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Setup Gradle Cache (26.3 Fabric)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-263-${{ hashFiles('modern/*.gradle*', 'modern/gradle.properties', 'modern/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-263-
+
+      - name: Make Modern Gradle Wrapper Executable
+        run: chmod +x modern/gradlew
+
+      - name: Build 26.3 Fabric Jar
+        working-directory: modern
+        run: ./gradlew clean build --no-daemon --stacktrace
+
+      - name: Upload 26.3 Fabric Artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Cigarette-V1-26.3-Fabric
+          path: modern/build/libs/Cigarette-V1-*-fabric.jar
+          if-no-files-found: error
           retention-days: 14

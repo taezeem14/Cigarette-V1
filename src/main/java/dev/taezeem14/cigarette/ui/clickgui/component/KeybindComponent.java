@@ -65,6 +65,10 @@ public class KeybindComponent extends Component {
         }
     }
 
+    public boolean isListening() {
+        return listening;
+    }
+
     @Override
     public boolean isVisible() {
         return setting.isVisible();

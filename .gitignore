@@ -2,6 +2,10 @@
 build/
 .gradle/
 run/
+modern/build/
+modern/.gradle/
+modern/run/
 *.class
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
+!modern/gradle/wrapper/gradle-wrapper.jar

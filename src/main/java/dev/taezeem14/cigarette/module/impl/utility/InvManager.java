@@ -8,8 +8,13 @@ import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
 import dev.taezeem14.cigarette.setting.impl.DoubleSliderSetting;
 import dev.taezeem14.cigarette.util.math.TimerUtil;
 import dev.taezeem14.cigarette.util.player.InventoryUtil;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockFalling;
+import net.minecraft.block.BlockTNT;
 import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.init.Items;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemAppleGold;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemFood;
@@ -87,6 +92,43 @@ public class InvManager extends Module {
                 timer.reset();
                 return;
             }
+
+            ItemStack slot1 = mc.thePlayer.inventoryContainer.getSlot(37).getStack();
+            if (!isFullScaffoldBlock(slot1)) {
+                int bestBlockSlot = -1;
+                int bestCount = 0;
+                for (int i = 9; i < 45; i++) {
+                    ItemStack stack = mc.thePlayer.inventoryContainer.getSlot(i).getStack();
+                    if (isFullScaffoldBlock(stack) && stack.stackSize > bestCount) {
+                        bestCount = stack.stackSize;
+                        bestBlockSlot = i;
+                    }
+                }
+                if (bestBlockSlot != -1 && bestBlockSlot != 37) {
+                    InventoryUtil.swap(bestBlockSlot, 1);
+                    currentDelay = (long) delay.getRandomValue();
+                    timer.reset();
+                    return;
+                }
+            }
+
+            ItemStack slot2 = mc.thePlayer.inventoryContainer.getSlot(38).getStack();
+            if (!(slot2 != null && (slot2.getItem() instanceof ItemAppleGold || slot2.getItem() instanceof ItemFood))) {
+                int gappleSlot = -1;
+                for (int i = 9; i < 45; i++) {
+                    ItemStack stack = mc.thePlayer.inventoryContainer.getSlot(i).getStack();
+                    if (stack != null && stack.getItem() == Items.golden_apple) {
+                        gappleSlot = i;
+                        break;
+                    }
+                }
+                if (gappleSlot != -1 && gappleSlot != 38) {
+                    InventoryUtil.swap(gappleSlot, 2);
+                    currentDelay = (long) delay.getRandomValue();
+                    timer.reset();
+                    return;
+                }
+            }
         }
 
         // 3. Drop Trash
@@ -112,16 +154,9 @@ public class InvManager extends Module {
             return !InventoryUtil.isBestWeapon(stack);
         }
 
-        // Check if worse armor
+        // Check if worse or duplicate armor
         if (item instanceof ItemArmor) {
-            ItemArmor armor = (ItemArmor) item;
-            int bestSlot = InventoryUtil.findBestArmor(armor.armorType);
-            if (bestSlot != -1) {
-                ItemStack best = mc.thePlayer.inventoryContainer.getSlot(bestSlot).getStack();
-                if (best != null && best != stack && InventoryUtil.getArmorScore(best) > InventoryUtil.getArmorScore(stack)) {
-                    return true;
-                }
-            }
+            return !InventoryUtil.isBestArmor(stack);
         }
 
         // Junk item IDs (feathers, sticks, seeds, rotten flesh, glass bottles)
@@ -129,5 +164,13 @@ public class InvManager extends Module {
         return unlocalized.contains("feather") || unlocalized.contains("stick") || unlocalized.contains("seeds")
                 || unlocalized.contains("rotten") || unlocalized.contains("string") || unlocalized.contains("flower")
                 || unlocalized.contains("deadbush") || unlocalized.contains("reeds");
+    }
+
+    private boolean isFullScaffoldBlock(ItemStack stack) {
+        if (stack == null || !(stack.getItem() instanceof ItemBlock) || stack.stackSize <= 0) {
+            return false;
+        }
+        Block block = ((ItemBlock) stack.getItem()).getBlock();
+        return block.isFullCube() && !(block instanceof BlockFalling) && !(block instanceof BlockTNT);
     }
 }

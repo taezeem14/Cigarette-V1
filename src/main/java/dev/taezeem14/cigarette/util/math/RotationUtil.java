@@ -158,4 +158,17 @@ public final class RotationUtil {
     public static boolean isEntityInFov(Entity entity, float fov) {
         return getFovToEntity(entity) <= fov;
     }
+
+    public static double getDistanceToEntityHitbox(Entity entity) {
+        if (mc.thePlayer == null || entity == null) {
+            return Double.MAX_VALUE;
+        }
+        AxisAlignedBB box = entity.getEntityBoundingBox();
+        if (box == null) {
+            return mc.thePlayer.getDistanceToEntity(entity);
+        }
+        Vec3 eyes = mc.thePlayer.getPositionEyes(1.0F);
+        Vec3 closest = getClosestPointOnAABB(box, 0.0, 1.0);
+        return eyes.distanceTo(closest);
+    }
 }

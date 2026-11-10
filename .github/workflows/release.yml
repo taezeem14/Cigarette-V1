@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    name: Build & Publish Release Binary
+    name: Build & Publish Release Binaries
     runs-on: ubuntu-latest
 
     steps:
@@ -19,30 +19,47 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Java 8 (Temurin)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-
       - name: Setup Gradle Cache
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-release-${{ hashFiles('**/*.gradle*', '**/gradle.properties', '**/gradle-wrapper.properties') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-gradle-release-
 
-      - name: Make Gradle Wrapper Executable
-        run: chmod +x gradlew
+      - name: Set up Java 8 (Temurin) for 1.8.9 Forge
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
 
-      - name: Build Cigarette V1 Production Jar
+      - name: Make Wrappers Executable
+        run: chmod +x gradlew modern/gradlew
+
+      - name: Build MC 1.8.9 Forge Production Jar
         run: ./gradlew setupCiWorkspace clean build --no-daemon --stacktrace
 
-      - name: List Generated Artifacts
-        run: ls -la build/libs/
+      - name: Set up Java 25 (Temurin) for 26.3 Fabric
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Build MC 26.3 Fabric Production Jar
+        working-directory: modern
+        run: ./gradlew clean build --no-daemon --stacktrace
+
+      - name: Stage Release Assets
+        run: |
+          mkdir -p dist
+          for f in build/libs/Cigarette-V1-*.jar; do
+            base=$(basename "$f" .jar)
+            cp "$f" "dist/${base}-mc1.8.9-forge.jar"
+          done
+          cp modern/build/libs/Cigarette-V1-*-fabric.jar dist/
+          ls -la dist/
 
       - name: Create GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v2
@@ -53,21 +70,21 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            build/libs/*.jar
+            dist/*.jar
           body: |
             # Cigarette V1 — Production Release `${{ github.ref_name }}`
-            
-            High-Performance Open-Source Minecraft 1.8.9 Hybrid Ghost & Utility Client modeled after Vape V4.
-            
-            ### ✨ Highlights
-            - **Target Runtime:** Minecraft 1.8.9 / Forge 11.15.1.2318 / SpongePowered Mixin 0.7.11
-            - **Dual Bootstrapping:** FML CoreMod (`MixinLoader`) + JVM Instrumentation Agent (`AgentMain`)
-            - **Vape V4 Replica UI:** `#141416` dark aesthetic, draggable multi-panel, scissor-clipped setting drawers
-            - **Bypass Mathematics:** GCD mouse sensitivity quantization, Box-Muller Gaussian clicker distributions, GLU 3D frustum projection
-            
-            ### 📦 Assets
-            Download the compiled jar below and place it in your `.minecraft/mods/` directory or run with standard Forge 1.8.9.
-            
+
+            High-Performance Open-Source Hybrid Ghost & Utility Client modeled after Vape V4.
+
+            ### Downloads
+            - **`Cigarette-V1-*-mc1.8.9-forge.jar`** — Legacy PvP Edition for **Minecraft 1.8.9 (Forge 11.15.1.2318)** on Java 8 (also works on `1.7`–`26.x` servers when paired with **ViaForge 4.4.0+4+1.8.9**).
+            - **`Cigarette-V1-*-mc26.3-fabric.jar`** — Modern Native Edition for **Minecraft 26.3 (Fabric Loader 0.20.1+ & Fabric API)** on Java 25 (also works on `1.8`–`26.2` servers when paired with **ViaFabricPlus**).
+
+            ### Highlights
+            - **Vape V4 Replica UI:** `#141416` dark aesthetic, draggable multi-panel ClickGUI (`Right Shift`), scissor-clipped drawers, Profiles, Search, HUD Editor, and custom accent themes
+            - **Ghost, Blatant & Utility Suite:** 41 modules across Combat, Blatant, Utility, Render, and Client categories with JSON profile persistence (`config/cigarette/`)
+            - **Works on Official & Offline/Cracked Launchers:** Official Launcher, Prism Launcher, MultiMC, TLauncher, SKLauncher
+
             ---
             *Crafted by [taezeem14](https://github.com/taezeem14) (Muhammad Taezeem Tariq).*
         env:

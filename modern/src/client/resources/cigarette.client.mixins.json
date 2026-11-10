@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "dev.taezeem14.cigarette.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "MixinConnection",
+    "MixinDeltaTrackerTimer",
+    "MixinEntity",
+    "MixinEntityRenderer",
+    "MixinKeyboardHandler",
+    "MixinKeyboardInput",
+    "MixinLivingEntity",
+    "MixinLocalPlayer",
+    "MixinMinecraft",
+    "MixinMultiPlayerGameMode",
+    "MixinPlayer"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

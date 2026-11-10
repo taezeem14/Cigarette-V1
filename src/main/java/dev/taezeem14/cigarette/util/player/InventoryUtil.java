@@ -120,15 +120,57 @@ public final class InventoryUtil {
     public static boolean isBestWeapon(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof ItemSword)) return false;
         float score = getWeaponScore(stack);
+        int selfSlot = findSlotOfStack(stack);
 
         for (int i = 0; i < 45; i++) {
             ItemStack other = mc.thePlayer.inventoryContainer.getSlot(i).getStack();
             if (other != null && other != stack && other.getItem() instanceof ItemSword) {
-                if (getWeaponScore(other) > score) {
+                float otherScore = getWeaponScore(other);
+                if (otherScore > score || (otherScore == score && i < selfSlot)) {
                     return false;
                 }
             }
         }
         return true;
+    }
+
+    public static boolean isBestArmor(ItemStack stack) {
+        if (stack == null || !(stack.getItem() instanceof ItemArmor) || mc.thePlayer == null) return false;
+        ItemArmor targetArmor = (ItemArmor) stack.getItem();
+        int type = targetArmor.armorType;
+        float score = getArmorScore(stack);
+
+        int equippedIndex = 3 - type;
+        ItemStack equipped = mc.thePlayer.inventory.armorInventory[equippedIndex];
+        if (equipped != null && equipped != stack && equipped.getItem() instanceof ItemArmor) {
+            if (getArmorScore(equipped) >= score) {
+                return false;
+            }
+        }
+
+        int selfSlot = findSlotOfStack(stack);
+        for (int i = 9; i < 45; i++) {
+            ItemStack other = mc.thePlayer.inventoryContainer.getSlot(i).getStack();
+            if (other != null && other != stack && other.getItem() instanceof ItemArmor) {
+                ItemArmor otherArmor = (ItemArmor) other.getItem();
+                if (otherArmor.armorType == type) {
+                    float otherScore = getArmorScore(other);
+                    if (otherScore > score || (otherScore == score && i < selfSlot)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    private static int findSlotOfStack(ItemStack target) {
+        if (mc.thePlayer == null) return Integer.MAX_VALUE;
+        for (int i = 0; i < 45; i++) {
+            if (mc.thePlayer.inventoryContainer.getSlot(i).getStack() == target) {
+                return i;
+            }
+        }
+        return Integer.MAX_VALUE;
     }
 }

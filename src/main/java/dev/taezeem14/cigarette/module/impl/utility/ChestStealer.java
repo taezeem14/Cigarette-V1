@@ -60,13 +60,20 @@ public class ChestStealer extends Module {
 
         for (int i = 0; i < chestSize; i++) {
             ItemStack stack = lowerChest.getStackInSlot(i);
-            if (stack != null) {
+            if (stack != null && hasInventorySpaceFor(stack)) {
                 slotsWithItems.add(i);
             }
         }
 
         if (slotsWithItems.isEmpty()) {
-            if (autoClose.isEnabled() && timer.hasTimeElapsed(currentDelay)) {
+            boolean chestCompletelyEmpty = true;
+            for (int i = 0; i < chestSize; i++) {
+                if (lowerChest.getStackInSlot(i) != null) {
+                    chestCompletelyEmpty = false;
+                    break;
+                }
+            }
+            if (chestCompletelyEmpty && autoClose.isEnabled() && timer.hasTimeElapsed(currentDelay)) {
                 mc.thePlayer.closeScreen();
             }
             return;
@@ -82,5 +89,23 @@ public class ChestStealer extends Module {
             currentDelay = (long) delay.getRandomValue();
             timer.reset();
         }
+    }
+
+    private boolean hasInventorySpaceFor(ItemStack candidate) {
+        if (mc.thePlayer == null || mc.thePlayer.inventory == null) return false;
+        if (mc.thePlayer.inventory.getFirstEmptyStack() != -1) {
+            return true;
+        }
+        if (candidate.isStackable()) {
+            for (int i = 0; i < 36; i++) {
+                ItemStack existing = mc.thePlayer.inventory.getStackInSlot(i);
+                if (existing != null && existing.isItemEqual(candidate)
+                        && ItemStack.areItemStackTagsEqual(existing, candidate)
+                        && existing.stackSize < existing.getMaxStackSize()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

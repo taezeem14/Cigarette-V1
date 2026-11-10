@@ -6,6 +6,7 @@ import dev.taezeem14.cigarette.module.ModuleManager;
 import dev.taezeem14.cigarette.ui.clickgui.ClickGUI;
 import dev.taezeem14.cigarette.ui.font.FontUtil;
 import dev.taezeem14.cigarette.ui.hud.NotificationManager;
+import dev.taezeem14.cigarette.util.render.BlurUtil;
 
 public class Cigarette {
 
@@ -63,6 +64,7 @@ public class Cigarette {
         if (this.notificationManager != null) {
             this.notificationManager.clear();
         }
+        BlurUtil.cleanup();
         this.clickGUI = null;
     }
 

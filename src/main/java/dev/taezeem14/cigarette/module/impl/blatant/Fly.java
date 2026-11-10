@@ -16,6 +16,8 @@ public class Fly extends Module {
 
     private boolean boosted = false;
     private int boostTicks = 0;
+    private boolean prevAllowFlying = false;
+    private boolean prevFlying = false;
 
     public Fly() {
         super("Fly", "Allows the player to fly in survival mode", Category.BLATANT);
@@ -33,7 +35,10 @@ public class Fly extends Module {
         boostTicks = 0;
         if (mc.thePlayer == null) return;
 
+        prevAllowFlying = mc.thePlayer.capabilities.allowFlying;
+        prevFlying = mc.thePlayer.capabilities.isFlying;
         if (mode.is("Vanilla")) {
+            mc.thePlayer.capabilities.allowFlying = true;
             mc.thePlayer.capabilities.isFlying = true;
         }
     }
@@ -44,8 +49,11 @@ public class Fly extends Module {
         boostTicks = 0;
         if (mc.thePlayer == null) return;
 
-        if (mode.is("Vanilla") && !mc.thePlayer.capabilities.isCreativeMode) {
-            mc.thePlayer.capabilities.isFlying = false;
+        if (mode.is("Vanilla")) {
+            if (!mc.thePlayer.capabilities.isCreativeMode) {
+                mc.thePlayer.capabilities.allowFlying = prevAllowFlying;
+                mc.thePlayer.capabilities.isFlying = prevAllowFlying && prevFlying;
+            }
         }
 
         mc.thePlayer.motionX = 0.0;
@@ -82,6 +90,7 @@ public class Fly extends Module {
         if (mc.thePlayer == null) return;
 
         if (mode.is("Vanilla")) {
+            mc.thePlayer.capabilities.allowFlying = true;
             mc.thePlayer.capabilities.isFlying = true;
             MoveUtil.strafe(event, speedVal.getValue());
         } else if (mode.is("Motion")) {

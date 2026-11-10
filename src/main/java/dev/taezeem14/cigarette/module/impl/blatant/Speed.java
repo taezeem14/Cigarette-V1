@@ -35,26 +35,25 @@ public class Speed extends Module {
 
     @EventTarget
     public void onTick(TickEvent event) {
-        if (!event.isPre() || mc.thePlayer == null || !MoveUtil.isMoving()) return;
-
-        if (mode.is("BHop")) {
-            if (mc.thePlayer.onGround) {
-                mc.thePlayer.motionY = 0.32D; // Low-hop jump
-                MoveUtil.strafe(MoveUtil.getBaseMoveSpeed() * speedVal.getValue() * 1.15);
-            } else {
-                MoveUtil.strafe(MoveUtil.getBaseMoveSpeed() * speedVal.getValue());
-            }
-        }
+        // Movement handled directly inside onMove for consistent MoveEvent & SafeWalk sync
     }
 
     @EventTarget
     public void onMove(MoveEvent event) {
         if (mc.thePlayer == null || !MoveUtil.isMoving()) {
-            MoveUtil.strafe(event, 0.0);
             return;
         }
 
-        if (mode.is("Strafe")) {
+        if (mode.is("BHop")) {
+            if (mc.thePlayer.onGround) {
+                mc.thePlayer.motionY = 0.32D;
+                event.setY(0.32D);
+                moveSpeed = MoveUtil.getBaseMoveSpeed() * speedVal.getValue() * 1.15;
+            } else {
+                moveSpeed = MoveUtil.getBaseMoveSpeed() * speedVal.getValue();
+            }
+            MoveUtil.strafe(event, moveSpeed);
+        } else if (mode.is("Strafe")) {
             if (mc.thePlayer.onGround) {
                 mc.thePlayer.motionY = 0.42F;
                 event.setY(0.42F);

@@ -37,14 +37,18 @@ public class FastPlace extends Module {
         ItemStack held = mc.thePlayer.getHeldItem();
         if (held == null) return;
 
-        if (blocksOnly.isEnabled() && !(held.getItem() instanceof ItemBlock)) {
-            return;
-        }
+        boolean wantBlocks = blocksOnly.isEnabled();
+        boolean wantProj = projectilesOnly.isEnabled();
+        boolean isBlock = held.getItem() instanceof ItemBlock;
+        boolean isProj = held.getItem() instanceof ItemEgg || held.getItem() instanceof ItemSnowball
+                || held.getItem() instanceof ItemEnderPearl || held.getItem() instanceof ItemExpBottle;
 
-        if (projectilesOnly.isEnabled()) {
-            boolean isProj = held.getItem() instanceof ItemEgg || held.getItem() instanceof ItemSnowball
-                    || held.getItem() instanceof ItemEnderPearl || held.getItem() instanceof ItemExpBottle;
-            if (!isProj) return;
+        if (wantBlocks && wantProj) {
+            if (!isBlock && !isProj) return;
+        } else if (wantBlocks && !isBlock) {
+            return;
+        } else if (wantProj && !isProj) {
+            return;
         }
 
         try {

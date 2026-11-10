@@ -40,15 +40,11 @@ public class Teams extends Module {
                 }
             }
 
-            // Check prefix color code matching (e.g. §c vs §a)
-            String myPrefix = mc.thePlayer.getDisplayName().getFormattedText();
-            String otherPrefix = player.getDisplayName().getFormattedText();
-            if (myPrefix.length() >= 2 && otherPrefix.length() >= 2) {
-                if (myPrefix.startsWith("§") && otherPrefix.startsWith("§")) {
-                    if (myPrefix.charAt(1) == otherPrefix.charAt(1)) {
-                        return true;
-                    }
-                }
+            // Check color code immediately formatting the player's name (skipping §r reset and style codes)
+            char myColor = extractNameColorCode(mc.thePlayer.getDisplayName().getFormattedText(), mc.thePlayer.getName());
+            char otherColor = extractNameColorCode(player.getDisplayName().getFormattedText(), player.getName());
+            if (myColor != '\0' && myColor == otherColor) {
+                return true;
             }
         }
 
@@ -71,6 +67,25 @@ public class Teams extends Module {
         }
 
         return false;
+    }
+
+    private static char extractNameColorCode(String formatted, String rawName) {
+        if (formatted == null || rawName == null) return '\0';
+        int nameIdx = formatted.indexOf(rawName);
+        int scanEnd = nameIdx >= 0 ? nameIdx : formatted.length();
+        char activeColor = '\0';
+        for (int i = 0; i < scanEnd - 1; i++) {
+            if (formatted.charAt(i) == '\u00a7') {
+                char code = Character.toLowerCase(formatted.charAt(i + 1));
+                if ((code >= '0' && code <= '9') || (code >= 'a' && code <= 'f')) {
+                    activeColor = code;
+                } else if (code == 'r') {
+                    activeColor = '\0';
+                }
+                i++;
+            }
+        }
+        return activeColor;
     }
 
     public static Teams getInstance() {

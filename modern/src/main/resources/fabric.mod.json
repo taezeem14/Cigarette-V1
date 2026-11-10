@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "cigarette",
+  "version": "${version}",
+  "name": "Cigarette V1",
+  "description": "High-Performance Open-Source Hybrid Ghost & Utility Client with Vape V4 UI for Minecraft 26.3 Fabric",
+  "authors": [
+    "taezeem14"
+  ],
+  "contact": {
+    "homepage": "https://github.com/taezeem14/Cigarette-V1",
+    "sources": "https://github.com/taezeem14/Cigarette-V1"
+  },
+  "license": "GPL-3.0-only",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.taezeem14.cigarette.CigaretteModernClient"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "cigarette.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

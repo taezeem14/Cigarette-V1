@@ -260,7 +260,18 @@ public class HUD extends Module {
     }
 
     public float getArrayListX() {
-        return arrayListX < 0 ? 10.0f : arrayListX;
+        if (arrayListX < 0) {
+            if (mc != null) {
+                ScaledResolution sr = new ScaledResolution(mc);
+                return Math.max(10.0f, sr.getScaledWidth() - 102.0f);
+            }
+            return 10.0f;
+        }
+        return arrayListX;
+    }
+
+    public float getRawArrayListX() {
+        return arrayListX;
     }
 
     public void setArrayListX(float arrayListX) {

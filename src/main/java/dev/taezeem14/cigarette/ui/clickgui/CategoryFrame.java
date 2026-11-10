@@ -237,6 +237,15 @@ public class CategoryFrame {
                 || (module.getDescription() != null && module.getDescription().toLowerCase().contains(q));
     }
 
+    public boolean isListening() {
+        for (ModuleButton btn : buttons) {
+            if (btn.isListening()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isHeaderHovered(float mouseX, float mouseY) {
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + headerHeight;
     }

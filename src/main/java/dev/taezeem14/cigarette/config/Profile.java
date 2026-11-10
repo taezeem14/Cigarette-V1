@@ -113,8 +113,7 @@ public class Profile {
                 if (hud != null) {
                     hudJson.addProperty("watermarkX", hud.getWatermarkX());
                     hudJson.addProperty("watermarkY", hud.getWatermarkY());
-                    Float rawArrayListX = MappingResolver.getFieldValue(hud, HUD.class, "arrayListX");
-                    hudJson.addProperty("arrayListX", rawArrayListX != null ? rawArrayListX : hud.getArrayListX());
+                    hudJson.addProperty("arrayListX", hud.getRawArrayListX());
                     hudJson.addProperty("arrayListY", hud.getArrayListY());
                 }
                 if (targetHud != null) {

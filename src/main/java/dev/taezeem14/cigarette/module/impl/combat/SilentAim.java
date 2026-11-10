@@ -11,7 +11,6 @@ import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.math.RandomUtil;
 import dev.taezeem14.cigarette.util.math.RotationUtil;
-import dev.taezeem14.cigarette.util.player.MoveUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -77,10 +76,6 @@ public class SilentAim extends Module {
         activeRotations = fixedRotations;
         event.setYaw(fixedRotations[0]);
         event.setPitch(fixedRotations[1]);
-
-        if (isMovementFixEnabled()) {
-            MoveUtil.fixMovement(fixedRotations[0], isStrictMovementFix());
-        }
     }
 
     public static float[] getActiveRotations() {

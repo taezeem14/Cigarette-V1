@@ -224,6 +224,18 @@ public class ModuleButton {
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
 
+    public boolean isListening() {
+        if (binding) {
+            return true;
+        }
+        for (Component component : components) {
+            if (component instanceof KeybindComponent && ((KeybindComponent) component).isListening()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean isExpanded() {
         return expanded;
     }

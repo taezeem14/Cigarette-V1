@@ -15,6 +15,10 @@ import dev.taezeem14.cigarette.util.math.RandomUtil;
 import dev.taezeem14.cigarette.util.math.RotationUtil;
 import dev.taezeem14.cigarette.util.math.TimerUtil;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.monster.EntityMob;
+import net.minecraft.entity.monster.EntitySlime;
+import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
@@ -41,16 +45,20 @@ public class KillAura extends Module {
     private final ModeSetting autoBlockMode = new ModeSetting("AutoBlock Mode", "Fake", "None", "Vanilla", "Fake", "Interact");
     private final ModeSetting rotations = new ModeSetting("Rotations", "Smooth", "Smooth", "Linear", "Instant");
     private final BooleanSetting keepSprint = new BooleanSetting("KeepSprint", true);
+    private final BooleanSetting targetPlayers = new BooleanSetting("Players", true);
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", false);
+    private final BooleanSetting targetInvisibles = new BooleanSetting("Invisibles", true);
 
     private final TimerUtil attackTimer = new TimerUtil();
     private final TimerUtil switchTimer = new TimerUtil();
-    private EntityPlayer currentTarget;
+    private EntityLivingBase currentTarget;
     private long nextAttackDelay = 100L;
     private boolean blocking = false;
 
     public KillAura() {
         super("KillAura", "Automatically attacks hostile entities within range", Category.BLATANT);
-        addSettings(targetMode, sortMode, aps, attackRange, swingRange, autoBlockMode, rotations, keepSprint);
+        addSettings(targetMode, sortMode, aps, attackRange, swingRange, autoBlockMode, rotations, keepSprint,
+                targetPlayers, targetMobs, targetInvisibles);
         instance = this;
     }
 
@@ -85,7 +93,7 @@ public class KillAura extends Module {
             return;
         }
 
-        List<EntityPlayer> targets = getTargets();
+        List<EntityLivingBase> targets = getTargets();
 
         if (targets.isEmpty()) {
             currentTarget = null;
@@ -162,7 +170,7 @@ public class KillAura extends Module {
             // Attack handling (AttackEvent is dispatched by MixinPlayerControllerMP.attackEntity)
             if (attackTimer.hasTimeElapsed(nextAttackDelay)) {
                 if (targetMode.is("Multi")) {
-                    for (EntityPlayer target : targets) {
+                    for (EntityLivingBase target : targets) {
                         attack(target);
                     }
                 } else {
@@ -181,9 +189,9 @@ public class KillAura extends Module {
         }
     }
 
-    private void attack(EntityPlayer target) {
+    private void attack(EntityLivingBase target) {
         if (target == null || mc.thePlayer == null) return;
-        double dist = mc.thePlayer.getDistanceToEntity(target);
+        double dist = Math.min(mc.thePlayer.getDistanceToEntity(target), RotationUtil.getDistanceToEntityHitbox(target));
 
         if (dist <= swingRange.getValue()) {
             mc.thePlayer.swingItem();
@@ -219,32 +227,42 @@ public class KillAura extends Module {
         return held != null && held.getItem() instanceof ItemSword && !autoBlockMode.is("None");
     }
 
-    private List<EntityPlayer> getTargets() {
-        List<EntityPlayer> list = new ArrayList<>();
+    private List<EntityLivingBase> getTargets() {
+        List<EntityLivingBase> list = new ArrayList<>();
         double maxDist = Math.max(attackRange.getValue(), swingRange.getValue());
 
         for (Entity entity : mc.theWorld.loadedEntityList) {
-            if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer) continue;
+            if (!(entity instanceof EntityLivingBase) || entity == mc.thePlayer) continue;
             if (entity.getEntityId() == -1337) continue;
 
-            EntityPlayer player = (EntityPlayer) entity;
-            if (AntiBot.isBot(player)) continue;
-            if (player.isDead || player.getHealth() <= 0.0F) continue;
-            if (FriendManager.isFriend(player.getName())) continue;
-            if (Teams.isTeammate(player)) continue;
+            EntityLivingBase living = (EntityLivingBase) entity;
+            if (living.isDead || living.getHealth() <= 0.0F) continue;
+            if (living.isInvisible() && !targetInvisibles.isEnabled()) continue;
 
-            double dist = mc.thePlayer.getDistanceToEntity(player);
+            if (living instanceof EntityPlayer) {
+                if (!targetPlayers.isEnabled()) continue;
+                EntityPlayer player = (EntityPlayer) living;
+                if (AntiBot.isBot(player)) continue;
+                if (FriendManager.isFriend(player.getName())) continue;
+                if (Teams.isTeammate(player)) continue;
+            } else if (living instanceof EntityMob || living instanceof EntitySlime || living instanceof EntityAnimal) {
+                if (!targetMobs.isEnabled()) continue;
+            } else {
+                continue;
+            }
+
+            double dist = Math.min(mc.thePlayer.getDistanceToEntity(living), RotationUtil.getDistanceToEntityHitbox(living));
             if (dist <= maxDist) {
-                list.add(player);
+                list.add(living);
             }
         }
 
         switch (sortMode.getMode()) {
             case "Distance":
-                list.sort(Comparator.comparingDouble(e -> mc.thePlayer.getDistanceToEntity(e)));
+                list.sort(Comparator.comparingDouble(RotationUtil::getDistanceToEntityHitbox));
                 break;
             case "Health":
-                list.sort(Comparator.comparingDouble(EntityPlayer::getHealth));
+                list.sort(Comparator.comparingDouble(EntityLivingBase::getHealth));
                 break;
             case "HurtTime":
                 list.sort(Comparator.comparingInt(e -> e.hurtTime));
@@ -288,7 +306,7 @@ public class KillAura extends Module {
         return instance != null && instance.isEnabled() && instance.keepSprint.isEnabled();
     }
 
-    public EntityPlayer getCurrentTarget() {
+    public EntityLivingBase getCurrentTarget() {
         return currentTarget;
     }
 

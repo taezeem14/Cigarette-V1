@@ -33,6 +33,18 @@ public final class BlurUtil {
     private BlurUtil() {
     }
 
+    public static void cleanup() {
+        if (blurShader != null) {
+            try {
+                blurShader.deleteShaderGroup();
+            } catch (Throwable ignored) {
+            }
+            blurShader = null;
+        }
+        lastWidth = -1;
+        lastHeight = -1;
+    }
+
     private static boolean ensureShaderReady() {
         if (shaderUnsupported || !OpenGlHelper.isFramebufferEnabled() || !OpenGlHelper.areShadersSupported()) {
             return false;
@@ -195,6 +207,9 @@ public final class BlurUtil {
         try {
             if (mc.getFramebuffer() != null) {
                 mc.getFramebuffer().bindFramebuffer(true);
+            }
+            if (mc.entityRenderer != null) {
+                mc.entityRenderer.setupOverlayRendering();
             }
         } catch (Throwable ignored) {
         }

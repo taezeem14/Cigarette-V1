@@ -446,8 +446,15 @@ public class ClickGUI extends GuiScreen {
         if (showProfiles) {
             profilePanel.mouseClicked(scaledMouseX, scaledMouseY, mouseButton);
         } else {
-            for (CategoryFrame frame : frames) {
-                frame.mouseClicked(scaledMouseX, scaledMouseY, mouseButton, searchFilter);
+            for (int i = frames.size() - 1; i >= 0; i--) {
+                CategoryFrame frame = frames.get(i);
+                if (frame.mouseClicked(scaledMouseX, scaledMouseY, mouseButton, searchFilter)) {
+                    if (i != frames.size() - 1) {
+                        frames.remove(i);
+                        frames.add(frame);
+                    }
+                    break;
+                }
             }
         }
     }
@@ -470,7 +477,23 @@ public class ClickGUI extends GuiScreen {
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (keyCode == Keyboard.KEY_ESCAPE) {
+        boolean frameListening = false;
+        for (CategoryFrame frame : frames) {
+            if (frame.isListening()) {
+                frameListening = true;
+                break;
+            }
+        }
+
+        if (frameListening) {
+            for (CategoryFrame frame : frames) {
+                frame.keyTyped(typedChar, keyCode);
+            }
+            return;
+        }
+
+        ClickGUIModule clickGUIModule = getClickGUIModule();
+        if (keyCode == Keyboard.KEY_ESCAPE || (!searchFocused && clickGUIModule != null && keyCode == clickGUIModule.getKeyCode())) {
             mc.displayGuiScreen(null);
             return;
         }

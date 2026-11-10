@@ -138,15 +138,23 @@ public class Scaffold extends Module {
                 mc.thePlayer.jump();
             }
 
-            if (blockFace == null) return;
+            if (blockFace == null) {
+                // Restore client hotbar slot on server when idle in Spoof mode
+                if (blockPicker.is("Spoof") && serverSlot != -1 && serverSlot != mc.thePlayer.inventory.currentItem
+                        && mc.playerController != null) {
+                    mc.playerController.updateController();
+                    serverSlot = mc.thePlayer.inventory.currentItem;
+                }
+                return;
+            }
 
             // Calculate rotations
             Vec3 hitVec = BlockUtil.getHitVec(blockFace.getPos(), blockFace.getFacing());
             float[] rots = RotationUtil.getRotationsToVec(hitVec);
 
-            if (rotations.is("Diagonal")) {
+            if (rotations.is("Diagonal") || mode.is("GodBridge")) {
                 targetYaw = rots[0];
-                targetPitch = pitch.getValueFloat();
+                targetPitch = mode.is("GodBridge") ? 79.5F : pitch.getValueFloat();
             } else {
                 targetYaw = rots[0];
                 targetPitch = rots[1];
@@ -167,17 +175,10 @@ public class Scaffold extends Module {
                 mc.thePlayer.motionY = 0.41999998688697815D;
             }
 
-            // Select block (send C09 only when serverSlot changes)
-            if (blockSlot != -1) {
-                if (blockPicker.is("Switch")) {
-                    mc.thePlayer.inventory.currentItem = blockSlot;
-                    serverSlot = blockSlot;
-                } else if (blockPicker.is("Spoof")) {
-                    if (serverSlot != blockSlot && mc.getNetHandler() != null) {
-                        mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(blockSlot));
-                        serverSlot = blockSlot;
-                    }
-                }
+            // Switch mode updates client slot immediately; Spoof syncs via playerController in POST to avoid duplicate C09s
+            if (blockSlot != -1 && blockPicker.is("Switch")) {
+                mc.thePlayer.inventory.currentItem = blockSlot;
+                serverSlot = blockSlot;
             }
         } else if (event.isPost()) {
             if (blockFace == null) return;
@@ -199,6 +200,7 @@ public class Scaffold extends Module {
 
             if (blockPicker.is("Spoof")) {
                 mc.thePlayer.inventory.currentItem = slot;
+                serverSlot = slot;
             }
             try {
                 if (mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, stack, blockFace.getPos(), blockFace.getFacing(), hitVec)) {

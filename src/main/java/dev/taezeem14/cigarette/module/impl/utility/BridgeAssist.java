@@ -44,14 +44,23 @@ public class BridgeAssist extends Module {
             float wrappedYaw = RotationUtil.wrapAngleTo180(currentYaw);
             float snapped = Math.round(wrappedYaw / snapAngle) * snapAngle;
 
-            if (Math.abs(wrappedYaw - snapped) < 18.0F) {
-                mc.thePlayer.rotationYaw = snapped;
+            if (Math.abs(RotationUtil.wrapAngleTo180(snapped - wrappedYaw)) < 18.0F) {
+                float delta = RotationUtil.wrapAngleTo180(snapped - wrappedYaw);
+                mc.thePlayer.rotationYaw = RotationUtil.applySensitivityGCD(
+                        currentYaw,
+                        currentYaw + delta,
+                        mc.gameSettings.mouseSensitivity
+                );
             }
         }
 
         if (pitchAssist.isEnabled()) {
             if (Math.abs(mc.thePlayer.rotationPitch - assistedPitch.getValueFloat()) < 8.0F) {
-                mc.thePlayer.rotationPitch = assistedPitch.getValueFloat();
+                mc.thePlayer.rotationPitch = RotationUtil.applySensitivityGCD(
+                        mc.thePlayer.rotationPitch,
+                        assistedPitch.getValueFloat(),
+                        mc.gameSettings.mouseSensitivity
+                );
             }
         }
     }
