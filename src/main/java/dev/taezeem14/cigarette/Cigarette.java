@@ -11,7 +11,7 @@ import dev.taezeem14.cigarette.util.render.BlurUtil;
 public class Cigarette {
 
     public static final String NAME = "Cigarette";
-    public static final String VERSION = "1.0.0";
+    public static final String VERSION = "1.1.0";
     public static final String AUTHOR = "taezeem14";
 
     public static Cigarette INSTANCE;

@@ -82,7 +82,7 @@ jobs:
 
             ### Highlights
             - **Vape V4 Replica UI:** `#141416` dark aesthetic, draggable multi-panel ClickGUI (`Right Shift`), scissor-clipped drawers, Profiles, Search, HUD Editor, and custom accent themes
-            - **Ghost, Blatant & Utility Suite:** 41 modules across Combat, Blatant, Utility, Render, and Client categories with JSON profile persistence (`config/cigarette/`)
+            - **Ghost, Blatant & Utility Suite:** 41 modules across Combat, Blatant, Utility, Render, and Client categories with JSON profile persistence (`.minecraft/cigarette/profiles/` and `.minecraft/Cigarette/profiles/`)
             - **Works on Official & Offline/Cracked Launchers:** Official Launcher, Prism Launcher, MultiMC, TLauncher, SKLauncher
 
             ---

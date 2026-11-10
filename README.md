@@ -69,8 +69,8 @@ Cigarette V1 runs strictly client-side with **no** Mojang/Microsoft session veri
 ## Installation & Setup
 
 Download the build matching your Minecraft version from **[GitHub Releases](https://github.com/taezeem14/Cigarette-V1/releases/latest)**:
-- **Latest Minecraft (`26.3`)**: Download **`Cigarette-V1-1.0.0-mc26.3-fabric.jar`** and **[Fabric API for `26.3`](https://modrinth.com/mod/fabric-api/versions?g=26.3)**.
-- **Classic PvP (`1.8.9`)**: Download **`Cigarette-V1-1.0.0-mc1.8.9-forge.jar`**.
+- **Latest Minecraft (`26.3`)**: Download **`Cigarette-V1-1.1.0-mc26.3-fabric.jar`** and **[Fabric API for `26.3`](https://modrinth.com/mod/fabric-api/versions?g=26.3)**.
+- **Classic PvP (`1.8.9`)**: Download **`Cigarette-V1-1.1.0-mc1.8.9-forge.jar`**.
 
 <details open>
 <summary><b>Prism Launcher / MultiMC (Recommended — Clean Isolated Instances)</b></summary>
@@ -81,8 +81,8 @@ Prism Launcher keeps Java runtimes and `mods/` folders completely isolated per i
    - **Minecraft `26.3`** with **Fabric (`0.20.1+`)**, or
    - **Minecraft `1.8.9`** with **Forge (`11.15.1.2318`)**.
 2. Right-click the instance → **Edit → Mods**:
-   - **For `26.3`**: Use **Download mods** to add **Fabric API**, then click **Add file** and select `Cigarette-V1-1.0.0-mc26.3-fabric.jar`.
-   - **For `1.8.9`**: Click **Add file** and select `Cigarette-V1-1.0.0-mc1.8.9-forge.jar`.
+   - **For `26.3`**: Use **Download mods** to add **Fabric API**, then click **Add file** and select `Cigarette-V1-1.1.0-mc26.3-fabric.jar`.
+   - **For `1.8.9`**: Click **Add file** and select `Cigarette-V1-1.1.0-mc1.8.9-forge.jar`.
 3. Open **Settings → Java** inside the instance:
    - Set **Java 25+** for `26.3 Fabric`.
    - Set **Java 8** for `1.8.9 Forge`.
@@ -100,14 +100,14 @@ Prism Launcher keeps Java runtimes and `mods/` folders completely isolated per i
    - **Windows**: `Win + R` → `%appdata%\.minecraft\mods`
    - **macOS**: `~/Library/Application Support/minecraft/mods`
    - **Linux**: `~/.minecraft/mods`
-4. Copy **both** `Cigarette-V1-1.0.0-mc26.3-fabric.jar` and `fabric-api-*.jar` (`26.3`) into `mods/`.
+4. Copy **both** `Cigarette-V1-1.1.0-mc26.3-fabric.jar` and `fabric-api-*.jar` (`26.3`) into `mods/`.
 5. Ensure no `1.8.9` mods remain in `mods/`, select `Fabric 26.3`, and click **Enter the Game**.
 
 #### B. Classic PvP (`1.8.9 Forge`)
 1. Select **`Forge 1.8.9`** (`11.15.1.2318`) in the version selector.
 2. Open **Settings (Gear Icon) → Java Path** and point it to **Java 8** (`javaw.exe`).
    > Minecraft `1.8.9` Forge fails to start if launched under Java 17, 21, or 25.
-3. Place `Cigarette-V1-1.0.0-mc1.8.9-forge.jar` into `.minecraft/mods/` (with no `26.3`/Fabric JARs present).
+3. Place `Cigarette-V1-1.1.0-mc1.8.9-forge.jar` into `.minecraft/mods/` (with no `26.3`/Fabric JARs present).
 4. Click **Enter the Game**.
 
 </details>
@@ -118,14 +118,14 @@ Prism Launcher keeps Java runtimes and `mods/` folders completely isolated per i
 #### A. Minecraft `26.3` (Fabric)
 1. Install **[Java 25 (Eclipse Temurin)](https://adoptium.net/)**.
 2. Run the official **[Fabric Installer](https://fabricmc.net/use/installer/)**, select **Minecraft `26.3`** (`Loader 0.20.1+`), and click **Install**.
-3. Drop `Cigarette-V1-1.0.0-mc26.3-fabric.jar` and **[Fabric API (`26.3`)](https://modrinth.com/mod/fabric-api/versions?g=26.3)** into `.minecraft/mods/`.
+3. Drop `Cigarette-V1-1.1.0-mc26.3-fabric.jar` and **[Fabric API (`26.3`)](https://modrinth.com/mod/fabric-api/versions?g=26.3)** into `.minecraft/mods/`.
 4. Launch the **`fabric-loader-26.3`** installation.
 
 #### B. Minecraft `1.8.9` (Forge)
 1. Install **Java 8 (Eclipse Temurin 8)**.
 2. Run vanilla Minecraft **`1.8.9`** once, then close the game.
 3. Run the **[Forge `1.8.9-11.15.1.2318` Installer](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.8.9.html)** (**Install client**).
-4. Drop `Cigarette-V1-1.0.0-mc1.8.9-forge.jar` into `.minecraft/mods/`.
+4. Drop `Cigarette-V1-1.1.0-mc1.8.9-forge.jar` into `.minecraft/mods/`.
 5. In the Official Launcher, edit your `1.8.9-forge` profile → **More Options → Java Executable**, verify it points to Java 8 `javaw.exe`, and click **Play**.
 
 </details>
@@ -133,7 +133,7 @@ Prism Launcher keeps Java runtimes and `mods/` folders completely isolated per i
 <details>
 <summary><b>ViaForge Setup (Join Modern 1.20 / 1.21 / 26.x Servers from 1.8.9 Forge)</b></summary>
 
-1. Install **`1.8.9 Forge`** with `Cigarette-V1-1.0.0-mc1.8.9-forge.jar` in `mods/`.
+1. Install **`1.8.9 Forge`** with `Cigarette-V1-1.1.0-mc1.8.9-forge.jar` in `mods/`.
 2. Add **[ViaForge `4.4.0+4+1.8.9`](https://modrinth.com/mod/viaforge)** to the same `mods/` directory.
 3. Choose your target server protocol version directly from the **Multiplayer** screen's **ViaForge** selector.
 
@@ -255,7 +255,7 @@ Cigarette-V1/
 .\gradlew.bat setupCiWorkspace clean build --no-daemon
 ```
 
-> Output binary: `build/libs/Cigarette-V1-1.0.0.jar`
+> Output binary: `build/libs/Cigarette-V1-1.1.0.jar`
 
 ### Build Minecraft `26.3` Fabric (`modern/`)
 
@@ -269,7 +269,7 @@ cd modern
 .\gradlew.bat clean build --no-daemon
 ```
 
-> Output binary: `modern/build/libs/Cigarette-V1-1.0.0-mc26.3-fabric.jar`
+> Output binary: `modern/build/libs/Cigarette-V1-1.1.0-mc26.3-fabric.jar`
 
 ---
 
