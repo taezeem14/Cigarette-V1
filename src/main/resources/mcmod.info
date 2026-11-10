@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "cigarette",
+    "name": "Cigarette V1",
+    "description": "High-Performance Open-Source Minecraft 1.8.9 Hybrid & Ghost Client",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://github.com/taezeem14/Cigarette-V1",
+    "updateUrl": "",
+    "authorList": [
+      "taezeem14"
+    ],
+    "credits": "taezeem14",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]

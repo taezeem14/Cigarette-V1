@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "minVersion": "0.7.11",
+  "package": "dev.taezeem14.cigarette.mixin.impl",
+  "refmap": "mixins.cigarette.refmap.json",
+  "target": "@env(DEFAULT)",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MixinMinecraft",
+    "MixinEntityRenderer",
+    "MixinEntityPlayerSP",
+    "MixinNetworkManager",
+    "MixinGuiIngame",
+    "MixinRendererLivingEntity"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
