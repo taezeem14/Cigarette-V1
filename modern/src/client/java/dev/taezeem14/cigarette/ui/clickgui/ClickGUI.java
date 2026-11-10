@@ -224,14 +224,15 @@ public class ClickGUI extends Screen {
         float searchW = Math.max(70.0F, scaleX - searchX - 10.0F);
         RenderUtil.drawRoundedRect(g, searchX, btnY, searchW, btnH, 3.0F, 0xFF131317);
         RenderUtil.drawRoundedOutline(g, searchX, btnY, searchW, btnH, 3.0F, 1.0F, searchFocused ? accent : ColorUtil.BORDER);
+        RenderUtil.drawFaIcon(g, "search", searchX + 5.5F, btnY + (btnH - 8.0F) / 2.0F, 8.0F, searchFocused ? accent : ColorUtil.TEXT_MUTED);
 
         String searchDisplay = searchFilter.isEmpty() && !searchFocused
                 ? "Search modules..."
                 : searchFilter + (searchFocused && (System.currentTimeMillis() % 1000 > 500) ? "_" : "");
         int searchCol = searchFilter.isEmpty() && !searchFocused ? 0xFF666670 : ColorUtil.TEXT_PRIMARY;
-        RenderUtil.pushScissor(g, searchX + 2.0F, btnY, searchW - 16.0F, btnH, guiScale);
+        RenderUtil.pushScissor(g, searchX + 16.0F, btnY, searchW - 30.0F, btnH, guiScale);
         try {
-            RenderUtil.drawSmallText(g, searchDisplay, searchX + 6.0F, btnY + (btnH - RenderUtil.getSmallFontHeight()) / 2.0F, searchCol, false);
+            RenderUtil.drawSmallText(g, searchDisplay, searchX + 17.0F, btnY + (btnH - RenderUtil.getSmallFontHeight()) / 2.0F, searchCol, false);
         } finally {
             RenderUtil.popScissor(g);
         }

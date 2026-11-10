@@ -20,6 +20,8 @@ public class ConfigManager {
     private final File baseDir;
     private final File profilesDir;
     private Profile currentProfile;
+    private long lastBridgeModified = 0L;
+    private long lastBridgePollMs = 0L;
 
     public ConfigManager() {
         File mcDir = Minecraft.getInstance().gameDirectory;
@@ -103,5 +105,53 @@ public class ConfigManager {
 
     public Profile getCurrentProfile() {
         return currentProfile;
+    }
+
+    public void pollExternalSync() {
+        CigaretteModernClient inst = CigaretteModernClient.getInstance();
+        if (inst == null || inst.isDestructed()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastBridgePollMs < 600L) {
+            return;
+        }
+        lastBridgePollMs = now;
+
+        File bridge = new File(profilesDir, ".bridge_sync");
+        if (!bridge.isFile()) {
+            return;
+        }
+        long modified = bridge.lastModified();
+        if (modified <= lastBridgeModified) {
+            return;
+        }
+        lastBridgeModified = modified;
+
+        try (FileReader reader = new FileReader(bridge)) {
+            JsonObject obj = JsonParser.parseReader(reader).getAsJsonObject();
+            String profileName = obj.has("profile") ? obj.get("profile").getAsString() : "default";
+            String action = obj.has("action") ? obj.get("action").getAsString() : "reload";
+
+            if (!"none".equalsIgnoreCase(action)) {
+                if (load(profileName) && inst.getNotificationManager() != null) {
+                    inst.getNotificationManager().push(
+                            "Desktop Companion",
+                            "Synced profile '" + profileName + "'",
+                            dev.taezeem14.cigarette.ui.hud.NotificationManager.NotificationType.INFO,
+                            2000L
+                    );
+                }
+            }
+            if ("open_clickgui".equalsIgnoreCase(action) && inst.getModuleManager() != null) {
+                dev.taezeem14.cigarette.module.impl.render.ClickGUIModule guiMod =
+                        inst.getModuleManager().getModuleByClass(
+                                dev.taezeem14.cigarette.module.impl.render.ClickGUIModule.class);
+                if (guiMod != null && Minecraft.getInstance().player != null) {
+                    guiMod.setState(true);
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 }

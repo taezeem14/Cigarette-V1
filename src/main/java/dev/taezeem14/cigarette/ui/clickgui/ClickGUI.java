@@ -303,14 +303,15 @@ public class ClickGUI extends GuiScreen {
 
         RenderUtil.drawRoundedRect(searchX, searchY, searchW, searchH, 3.0f, 0xFF131317);
         RenderUtil.drawRoundedOutline(searchX, searchY, searchW, searchH, 3.0f, 1.0f, searchFocused ? accent : ColorUtil.BORDER);
+        RenderUtil.drawFaIcon("search", searchX + 5.5f, searchY + (searchH - 8.0f) / 2.0f, 8.0f, searchFocused ? accent : ColorUtil.TEXT_MUTED);
 
         String searchDisplay = searchFilter.isEmpty() && !searchFocused
                 ? "Search modules..."
                 : searchFilter + (searchFocused && (System.currentTimeMillis() % 1000 > 500) ? "_" : "");
         int searchCol = searchFilter.isEmpty() && !searchFocused ? 0xFF666670 : ColorUtil.TEXT_PRIMARY;
-        RenderUtil.pushScissor(searchX + 2.0f, searchY, searchW - 16.0f, searchH, guiScale);
+        RenderUtil.pushScissor(searchX + 16.0f, searchY, searchW - 30.0f, searchH, guiScale);
         try {
-            FontUtil.small.drawString(searchDisplay, searchX + 6.0f, searchY + (searchH - FontUtil.small.getHeight()) / 2.0f, searchCol);
+            FontUtil.small.drawString(searchDisplay, searchX + 17.0f, searchY + (searchH - FontUtil.small.getHeight()) / 2.0f, searchCol);
         } finally {
             RenderUtil.popScissor();
         }

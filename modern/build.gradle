@@ -40,12 +40,25 @@ processResources {
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    it.options.release = 25
-    it.options.encoding = "UTF-8"
+compileJava {
+    options.release = 8
+    options.encoding = "UTF-8"
+}
+
+compileClientJava {
+    options.release = 25
+    options.encoding = "UTF-8"
 }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
     targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'dev.taezeem14.cigarette.desktop.CigaretteDesktopApp'
+        )
+    }
 }

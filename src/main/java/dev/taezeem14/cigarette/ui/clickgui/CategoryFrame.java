@@ -81,8 +81,9 @@ public class CategoryFrame {
         RenderUtil.drawRect(x + 1.0f, y + headerHeight - 2.0f, width - 2.0f, 1.0f, ColorUtil.modifyAlpha(accent, 45));
         RenderUtil.drawRect(x + 1.0f, y + headerHeight - 1.0f, width - 2.0f, 1.0f, ColorUtil.modifyAlpha(accent, 180));
 
-        // Category Title
-        FontUtil.bold.drawString(category.getDisplayName(), x + 8.0f, y + (headerHeight - FontUtil.bold.getHeight()) / 2.0f, ColorUtil.TEXT_PRIMARY);
+        // Category FA Vector Icon + Title
+        RenderUtil.drawFaIcon(category.name(), x + 7.0f, y + (headerHeight - 9.0f) / 2.0f, 9.0f, accent);
+        FontUtil.bold.drawString(category.getDisplayName(), x + 19.0f, y + (headerHeight - FontUtil.bold.getHeight()) / 2.0f, ColorUtil.TEXT_PRIMARY);
 
         // Enabled count badge (e.g. 2/9) + collapse indicator
         int enabledCount = 0;

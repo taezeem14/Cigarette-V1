@@ -2,6 +2,8 @@ package dev.taezeem14.cigarette;
 
 import dev.taezeem14.cigarette.config.ConfigManager;
 import dev.taezeem14.cigarette.event.EventBus;
+import dev.taezeem14.cigarette.event.EventTarget;
+import dev.taezeem14.cigarette.event.impl.TickEvent;
 import dev.taezeem14.cigarette.module.ModuleManager;
 import dev.taezeem14.cigarette.ui.clickgui.ClickGUI;
 import dev.taezeem14.cigarette.ui.font.FontUtil;
@@ -11,7 +13,7 @@ import dev.taezeem14.cigarette.util.render.BlurUtil;
 public class Cigarette {
 
     public static final String NAME = "Cigarette";
-    public static final String VERSION = "1.1.0";
+    public static final String VERSION = "1.2.0";
     public static final String AUTHOR = "taezeem14";
 
     public static Cigarette INSTANCE;
@@ -41,9 +43,17 @@ public class Cigarette {
         FontUtil.init();
         this.clickGUI = new ClickGUI();
         this.configManager.init();
+        this.eventBus.register(this);
         this.initialized = true;
 
         System.out.println("[" + NAME + "] Initialization complete.");
+    }
+
+    @EventTarget
+    public void onTick(TickEvent event) {
+        if (event.isPost() && configManager != null && !destructed) {
+            configManager.pollExternalSync();
+        }
     }
 
     public void shutdown() {

@@ -25,12 +25,21 @@ public class ClickGUIModule extends Module {
 
     @Override
     public void onEnable() {
+        if (mc.player == null) {
+            setState(false);
+            return;
+        }
         syncThemeFromSetting();
-        if (mc.player != null) {
-            ClickGUI gui = CigaretteModernClient.getInstance() != null
-                    ? CigaretteModernClient.getInstance().getClickGUI()
-                    : new ClickGUI();
-            mc.gui.setScreen(gui);
+        ClickGUI gui = CigaretteModernClient.getInstance() != null
+                ? CigaretteModernClient.getInstance().getClickGUI()
+                : new ClickGUI();
+        mc.gui.setScreen(gui);
+    }
+
+    @Override
+    public void onDisable() {
+        if (mc.gui != null && mc.gui.screen() instanceof ClickGUI) {
+            mc.gui.setScreen(null);
         }
     }
 

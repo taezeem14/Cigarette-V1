@@ -22,7 +22,7 @@ import net.minecraft.resources.Identifier;
 public class CigaretteModernClient implements ClientModInitializer {
 
     public static final String NAME = "Cigarette";
-    public static final String VERSION = "1.1.0";
+    public static final String VERSION = "1.2.0";
     public static final String AUTHOR = "taezeem14";
 
     private static CigaretteModernClient instance;
@@ -57,6 +57,9 @@ public class CigaretteModernClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (!destructed && eventBus != null) {
                 eventBus.post(new TickEvent(EventState.POST));
+                if (configManager != null) {
+                    configManager.pollExternalSync();
+                }
             }
         });
 

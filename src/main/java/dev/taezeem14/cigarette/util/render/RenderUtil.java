@@ -545,4 +545,96 @@ public final class RenderUtil {
         GL11.glLineWidth(1.0F);
         disableGL3D();
     }
+
+    public static void drawFaIcon(String iconName, float x, float y, float size, int color) {
+        if (iconName == null) return;
+        String key = iconName.toLowerCase(java.util.Locale.ROOT);
+        float s = size / 12.0f;
+        enableGL2D();
+        color(color);
+        GL11.glLineWidth(1.35F);
+
+        if ("combat".equals(key)) {
+            drawGlCircleOutline(x + 6.0f * s, y + 6.0f * s, 4.0f * s);
+            drawGlLine(x + 6.0f * s, y + 0.8f * s, x + 6.0f * s, y + 3.2f * s);
+            drawGlLine(x + 6.0f * s, y + 8.8f * s, x + 6.0f * s, y + 11.2f * s);
+            drawGlLine(x + 0.8f * s, y + 6.0f * s, x + 3.2f * s, y + 6.0f * s);
+            drawGlLine(x + 8.8f * s, y + 6.0f * s, x + 11.2f * s, y + 6.0f * s);
+        } else if ("blatant".equals(key)) {
+            GL11.glBegin(GL11.GL_LINE_STRIP);
+            GL11.glVertex2f(x + 7.2f * s, y + 1.0f * s);
+            GL11.glVertex2f(x + 3.0f * s, y + 6.5f * s);
+            GL11.glVertex2f(x + 6.2f * s, y + 6.5f * s);
+            GL11.glVertex2f(x + 4.8f * s, y + 11.0f * s);
+            GL11.glVertex2f(x + 9.2f * s, y + 5.2f * s);
+            GL11.glVertex2f(x + 6.0f * s, y + 5.2f * s);
+            GL11.glVertex2f(x + 7.2f * s, y + 1.0f * s);
+            GL11.glEnd();
+        } else if ("render".equals(key)) {
+            GL11.glBegin(GL11.GL_LINE_STRIP);
+            GL11.glVertex2f(x + 1.0f * s, y + 6.0f * s);
+            GL11.glVertex2f(x + 3.8f * s, y + 3.2f * s);
+            GL11.glVertex2f(x + 8.2f * s, y + 3.2f * s);
+            GL11.glVertex2f(x + 11.0f * s, y + 6.0f * s);
+            GL11.glVertex2f(x + 8.2f * s, y + 8.8f * s);
+            GL11.glVertex2f(x + 3.8f * s, y + 8.8f * s);
+            GL11.glVertex2f(x + 1.0f * s, y + 6.0f * s);
+            GL11.glEnd();
+            drawGlCircleOutline(x + 6.0f * s, y + 6.0f * s, 1.6f * s);
+        } else if ("utility".equals(key) || "world".equals(key)) {
+            drawGlCircleOutline(x + 8.3f * s, y + 3.7f * s, 2.3f * s);
+            GL11.glLineWidth(1.9F);
+            drawGlLine(x + 6.8f * s, y + 5.2f * s, x + 2.2f * s, y + 9.8f * s);
+        } else if ("client".equals(key)) {
+            GL11.glBegin(GL11.GL_LINE_LOOP);
+            GL11.glVertex2f(x + 6.0f * s, y + 1.2f * s);
+            GL11.glVertex2f(x + 10.2f * s, y + 3.0f * s);
+            GL11.glVertex2f(x + 9.8f * s, y + 7.0f * s);
+            GL11.glVertex2f(x + 6.0f * s, y + 10.8f * s);
+            GL11.glVertex2f(x + 2.2f * s, y + 7.0f * s);
+            GL11.glVertex2f(x + 1.8f * s, y + 3.0f * s);
+            GL11.glEnd();
+        } else if ("search".equals(key)) {
+            drawGlCircleOutline(x + 4.8f * s, y + 4.8f * s, 3.2f * s);
+            drawGlLine(x + 7.2f * s, y + 7.2f * s, x + 10.6f * s, y + 10.6f * s);
+        } else if ("profiles".equals(key)) {
+            GL11.glBegin(GL11.GL_LINE_LOOP);
+            GL11.glVertex2f(x + 6.0f * s, y + 1.5f * s);
+            GL11.glVertex2f(x + 10.5f * s, y + 3.8f * s);
+            GL11.glVertex2f(x + 6.0f * s, y + 6.1f * s);
+            GL11.glVertex2f(x + 1.5f * s, y + 3.8f * s);
+            GL11.glEnd();
+            GL11.glBegin(GL11.GL_LINE_STRIP);
+            GL11.glVertex2f(x + 1.5f * s, y + 7.0f * s);
+            GL11.glVertex2f(x + 6.0f * s, y + 9.3f * s);
+            GL11.glVertex2f(x + 10.5f * s, y + 7.0f * s);
+            GL11.glEnd();
+        } else if ("hud".equals(key)) {
+            drawGlLine(x + 1.5f * s, y + 3.0f * s, x + 10.5f * s, y + 3.0f * s);
+            drawGlLine(x + 1.5f * s, y + 6.0f * s, x + 10.5f * s, y + 6.0f * s);
+            drawGlLine(x + 1.5f * s, y + 9.0f * s, x + 10.5f * s, y + 9.0f * s);
+            drawGlCircleOutline(x + 4.2f * s, y + 3.0f * s, 1.3f * s);
+            drawGlCircleOutline(x + 7.8f * s, y + 6.0f * s, 1.3f * s);
+            drawGlCircleOutline(x + 5.0f * s, y + 9.0f * s, 1.3f * s);
+        }
+
+        GL11.glLineWidth(1.0F);
+        disableGL2D();
+    }
+
+    private static void drawGlLine(float x1, float y1, float x2, float y2) {
+        GL11.glBegin(GL11.GL_LINES);
+        GL11.glVertex2f(x1, y1);
+        GL11.glVertex2f(x2, y2);
+        GL11.glEnd();
+    }
+
+    private static void drawGlCircleOutline(float cx, float cy, float r) {
+        GL11.glBegin(GL11.GL_LINE_LOOP);
+        for (int i = 0; i < 16; i++) {
+            double a = i * Math.PI * 2.0 / 16.0;
+            GL11.glVertex2f(cx + (float) Math.cos(a) * r, cy + (float) Math.sin(a) * r);
+        }
+        GL11.glEnd();
+    }
 }

@@ -72,7 +72,8 @@ public class CategoryFrame {
         RenderUtil.drawRect(g, x + 1.0F, y + headerHeight - 2.0F, width - 2.0F, 1.0F, ColorUtil.modifyAlpha(accent, 45));
         RenderUtil.drawRect(g, x + 1.0F, y + headerHeight - 1.0F, width - 2.0F, 1.0F, ColorUtil.modifyAlpha(accent, 180));
 
-        RenderUtil.drawText(g, category.getDisplayName(), x + 8.0F, y + (headerHeight - RenderUtil.getFontHeight()) / 2.0F, ColorUtil.TEXT_PRIMARY, false);
+        RenderUtil.drawFaIcon(g, category.name(), x + 7.0F, y + (headerHeight - 9.0F) / 2.0F, 9.0F, accent);
+        RenderUtil.drawText(g, category.getDisplayName(), x + 19.0F, y + (headerHeight - RenderUtil.getFontHeight()) / 2.0F, ColorUtil.TEXT_PRIMARY, false);
 
         int enabledCount = 0;
         for (ModuleButton btn : buttons) {

@@ -21,6 +21,8 @@ public class ConfigManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private final File profilesDir;
     private Profile activeProfile;
+    private long lastBridgeModified = 0L;
+    private long lastBridgePollMs = 0L;
 
     public ConfigManager() {
         File mcDir = Minecraft.getMinecraft().mcDataDir;
@@ -144,5 +146,56 @@ public class ConfigManager {
 
     public File getProfilesDir() {
         return profilesDir;
+    }
+
+    public void pollExternalSync() {
+        if (Cigarette.INSTANCE == null || Cigarette.INSTANCE.isDestructed()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastBridgePollMs < 600L) {
+            return;
+        }
+        lastBridgePollMs = now;
+
+        File bridge = new File(profilesDir, ".bridge_sync");
+        if (!bridge.isFile()) {
+            return;
+        }
+        long modified = bridge.lastModified();
+        if (modified <= lastBridgeModified) {
+            return;
+        }
+        lastBridgeModified = modified;
+
+        try (InputStreamReader reader = new InputStreamReader(new FileInputStream(bridge), StandardCharsets.UTF_8)) {
+            JsonElement parsed = new JsonParser().parse(reader);
+            if (parsed == null || !parsed.isJsonObject()) {
+                return;
+            }
+            JsonObject obj = parsed.getAsJsonObject();
+            String profileName = obj.has("profile") ? obj.get("profile").getAsString() : "default";
+            String action = obj.has("action") ? obj.get("action").getAsString() : "reload";
+
+            if (!"none".equalsIgnoreCase(action)) {
+                if (load(profileName) && Cigarette.INSTANCE.getNotificationManager() != null) {
+                    Cigarette.INSTANCE.getNotificationManager().push(
+                            "Desktop Companion",
+                            "Synced profile '" + profileName + "'",
+                            dev.taezeem14.cigarette.ui.hud.NotificationManager.NotificationType.INFO,
+                            2000L
+                    );
+                }
+            }
+            if ("open_clickgui".equalsIgnoreCase(action) && Cigarette.INSTANCE.getModuleManager() != null) {
+                dev.taezeem14.cigarette.module.impl.render.ClickGUIModule guiMod =
+                        Cigarette.INSTANCE.getModuleManager().getModuleByClass(
+                                dev.taezeem14.cigarette.module.impl.render.ClickGUIModule.class);
+                if (guiMod != null && Minecraft.getMinecraft().theWorld != null) {
+                    guiMod.setState(true);
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 }

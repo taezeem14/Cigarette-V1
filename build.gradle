@@ -13,7 +13,7 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle.forge'
 apply plugin: 'org.spongepowered.mixin'
 
-version = '1.1.0'
+version = '1.2.0'
 group = 'dev.taezeem14'
 archivesBaseName = 'Cigarette-V1'
 
@@ -91,6 +91,7 @@ jar {
     }
 
     manifest.attributes(
+            'Main-Class': 'dev.taezeem14.cigarette.desktop.CigaretteDesktopApp',
             'MixinConfigs': 'mixins.cigarette.json',
             'FMLAT': 'cigarette_at.cfg',
             'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
