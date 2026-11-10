@@ -1,0 +1,25 @@
+{
+  "name": "Cigarette V1",
+  "version": "1.0.0",
+  "releaseType": "release",
+  "buildNumber": 1,
+  "target": {
+    "minecraft": "1.8.9",
+    "forge": "11.15.1.2318-1.8.9",
+    "mappings": "stable_22",
+    "mixin": "0.7.11-SNAPSHOT",
+    "lwjgl": "2.9.4"
+  },
+  "author": {
+    "username": "taezeem14",
+    "name": "Muhammad Taezeem Tariq",
+    "email": "taezeemtariq@outlook.com",
+    "github": "https://github.com/taezeem14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/taezeem14/Cigarette-V1.git"
+  },
+  "license": "GPL-3.0",
+  "timestamp": "2026-11-10T12:00:00Z"
+}

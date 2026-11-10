@@ -1,0 +1,74 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release Binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 8 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+
+      - name: Setup Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x gradlew
+
+      - name: Build Cigarette V1 Production Jar
+        run: ./gradlew clean build --no-daemon --stacktrace
+
+      - name: List Generated Artifacts
+        run: ls -la build/libs/
+
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Cigarette V1 ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            build/libs/*.jar
+          body: |
+            # Cigarette V1 — Production Release `${{ github.ref_name }}`
+            
+            High-Performance Open-Source Minecraft 1.8.9 Hybrid Ghost & Utility Client modeled after Vape V4.
+            
+            ### ✨ Highlights
+            - **Target Runtime:** Minecraft 1.8.9 / Forge 11.15.1.2318 / SpongePowered Mixin 0.7.11
+            - **Dual Bootstrapping:** FML CoreMod (`MixinLoader`) + JVM Instrumentation Agent (`AgentMain`)
+            - **Vape V4 Replica UI:** `#141416` dark aesthetic, draggable multi-panel, scissor-clipped setting drawers
+            - **Bypass Mathematics:** GCD mouse sensitivity quantization, Box-Muller Gaussian clicker distributions, GLU 3D frustum projection
+            
+            ### 📦 Assets
+            Download the compiled jar below and place it in your `.minecraft/mods/` directory or run with standard Forge 1.8.9.
+            
+            ---
+            *Crafted by [taezeem14](https://github.com/taezeem14) (Muhammad Taezeem Tariq).*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
