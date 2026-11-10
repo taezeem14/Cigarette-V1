@@ -17,6 +17,11 @@ public class Timer extends Module {
     }
 
     @Override
+    public String getSuffix() {
+        return String.format("%.2f", speed.getValue());
+    }
+
+    @Override
     public void onDisable() {
         setTimerSpeed(1.0F);
     }
@@ -28,10 +33,12 @@ public class Timer extends Module {
     }
 
     public static void setTimerSpeed(float speedVal) {
+        if (mc == null) return;
+        float clamped = Math.max(0.05F, speedVal);
         try {
             Object timerObj = MappingResolver.getFieldValue(mc, mc.getClass(), MappingResolver.MINECRAFT_TIMER);
             if (timerObj != null) {
-                MappingResolver.setFieldValue(timerObj, speedVal, timerObj.getClass(), MappingResolver.TIMER_TIMER_SPEED);
+                MappingResolver.setFieldValue(timerObj, clamped, timerObj.getClass(), MappingResolver.TIMER_TIMER_SPEED);
             }
         } catch (Exception ignored) {
         }

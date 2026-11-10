@@ -24,6 +24,11 @@ public class Reach extends Module {
         instance = this;
     }
 
+    @Override
+    public String getSuffix() {
+        return String.format("%.2f-%.2f", range.getValueMin(), range.getValueMax());
+    }
+
     public static double getReachDistance() {
         if (instance == null || !instance.isEnabled() || mc.thePlayer == null) {
             return 3.0D;
@@ -46,6 +51,10 @@ public class Reach extends Module {
         }
 
         return instance.range.getRandomValue();
+    }
+
+    public static boolean shouldHitThroughWalls() {
+        return instance != null && instance.isEnabled() && instance.hitThroughWalls.isEnabled();
     }
 
     public boolean canHitThroughWalls() {

@@ -39,7 +39,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Cigarette V1 Production Jar
-        run: ./gradlew clean build --no-daemon --stacktrace
+        run: ./gradlew setupCiWorkspace clean build --no-daemon --stacktrace
 
       - name: List Generated Artifacts
         run: ls -la build/libs/

@@ -10,11 +10,32 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CFont {
 
+    private static final char[] EXTRA_GLYPHS = {
+            '\u2022', // bullet
+            '\u2013', // en dash
+            '\u2014', // em dash
+            '\u2018', // left single quote
+            '\u2019', // right single quote
+            '\u201C', // left double quote
+            '\u201D', // right double quote
+            '\u2026', // ellipsis
+            '\u25B6', // play / right triangle
+            '\u25BC', // down triangle
+            '\u25B2', // up triangle
+            '\u2713', // check mark
+            '\u2715', // multiply / close
+            '\u2605', // star
+            '\u2764'  // heart
+    };
+
     protected final float imgSize = 512.0f;
     protected CharData[] charData = new CharData[256];
+    protected final Map<Character, CharData> extraChars = new HashMap<>();
     protected Font font;
     protected boolean antiAlias;
     protected boolean fractionalMetrics;
@@ -26,11 +47,15 @@ public class CFont {
         this.font = font;
         this.antiAlias = antiAlias;
         this.fractionalMetrics = fractionalMetrics;
-        this.tex = setupTexture(font, antiAlias, fractionalMetrics, this.charData);
+        this.tex = setupTexture(font, antiAlias, fractionalMetrics, this.charData, this.extraChars);
     }
 
     protected DynamicTexture setupTexture(Font font, boolean antiAlias, boolean fractionalMetrics, CharData[] chars) {
-        BufferedImage img = generateFontImage(font, antiAlias, fractionalMetrics, chars);
+        return setupTexture(font, antiAlias, fractionalMetrics, chars, null);
+    }
+
+    protected DynamicTexture setupTexture(Font font, boolean antiAlias, boolean fractionalMetrics, CharData[] chars, Map<Character, CharData> extras) {
+        BufferedImage img = generateFontImage(font, antiAlias, fractionalMetrics, chars, extras);
         try {
             return new DynamicTexture(img);
         } catch (Exception e) {
@@ -39,7 +64,7 @@ public class CFont {
         }
     }
 
-    protected BufferedImage generateFontImage(Font font, boolean antiAlias, boolean fractionalMetrics, CharData[] chars) {
+    protected BufferedImage generateFontImage(Font font, boolean antiAlias, boolean fractionalMetrics, CharData[] chars, Map<Character, CharData> extras) {
         int imageSize = (int) this.imgSize;
         BufferedImage bufferedImage = new BufferedImage(imageSize, imageSize, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = (Graphics2D) bufferedImage.getGraphics();
@@ -64,43 +89,124 @@ public class CFont {
 
         for (int i = 0; i < chars.length; i++) {
             char ch = (char) i;
-            CharData charData = new CharData();
-            Rectangle2D dimensions = fontMetrics.getStringBounds(String.valueOf(ch), g);
-
-            charData.width = dimensions.getBounds().width + 8;
-            charData.height = dimensions.getBounds().height;
-
-            if (positionX + charData.width >= imageSize) {
+            CharData data = createCharData(g, fontMetrics, ch, imageSize, positionX, positionY, charHeight);
+            if (data.wrapped) {
                 positionX = 0;
                 positionY += charHeight;
                 charHeight = 0;
+                data.storedX = positionX;
+                data.storedY = positionY;
             }
-
-            if (charData.height > charHeight) {
-                charHeight = charData.height;
+            if (data.height > charHeight) {
+                charHeight = data.height;
             }
-
-            charData.storedX = positionX;
-            charData.storedY = positionY;
-
-            if (charData.height > this.fontHeight) {
-                this.fontHeight = charData.height;
+            if (data.height > this.fontHeight) {
+                this.fontHeight = data.height;
             }
-
-            chars[i] = charData;
-            g.drawString(String.valueOf(ch), positionX + 2, positionY + fontMetrics.getAscent());
-            positionX += charData.width;
+            chars[i] = data;
+            if (positionY + data.height < imageSize) {
+                g.drawString(String.valueOf(ch), positionX + 2, positionY + fontMetrics.getAscent());
+            }
+            positionX += data.width;
         }
 
+        if (extras != null) {
+            extras.clear();
+            for (char ch : EXTRA_GLYPHS) {
+                CharData data = createCharData(g, fontMetrics, ch, imageSize, positionX, positionY, charHeight);
+                if (data.wrapped) {
+                    positionX = 0;
+                    positionY += charHeight;
+                    charHeight = 0;
+                    data.storedX = positionX;
+                    data.storedY = positionY;
+                }
+                if (data.height > charHeight) {
+                    charHeight = data.height;
+                }
+                if (data.height > this.fontHeight) {
+                    this.fontHeight = data.height;
+                }
+                extras.put(ch, data);
+                if (positionY + data.height < imageSize) {
+                    g.drawString(String.valueOf(ch), positionX + 2, positionY + fontMetrics.getAscent());
+                }
+                positionX += data.width;
+            }
+        }
+
+        g.dispose();
         return bufferedImage;
     }
 
-    public void drawChar(CharData[] chars, char c, float x, float y) throws ArrayIndexOutOfBoundsException {
-        try {
-            drawQuad(x, y, chars[c].width, chars[c].height, chars[c].storedX, chars[c].storedY, chars[c].width, chars[c].height);
-        } catch (Exception e) {
-            e.printStackTrace();
+    private CharData createCharData(Graphics2D g, FontMetrics fontMetrics, char ch, int imageSize, int positionX, int positionY, int charHeight) {
+        CharData data = new CharData();
+        Rectangle2D dimensions = fontMetrics.getStringBounds(String.valueOf(ch), g);
+        data.width = Math.max(8, dimensions.getBounds().width + 8);
+        data.height = Math.max(8, dimensions.getBounds().height);
+
+        if (positionX + data.width >= imageSize) {
+            data.wrapped = true;
+            data.storedX = 0;
+            data.storedY = positionY + charHeight;
+        } else {
+            data.wrapped = false;
+            data.storedX = positionX;
+            data.storedY = positionY;
         }
+        return data;
+    }
+
+    protected CharData resolveCharData(CharData[] primary, char c) {
+        if (c < primary.length && primary[c] != null) {
+            return primary[c];
+        }
+        if (primary == this.charData) {
+            CharData extra = extraChars.get(c);
+            if (extra != null) {
+                return extra;
+            }
+        }
+        char mapped = mapUnsupportedChar(c);
+        if (mapped < primary.length && primary[mapped] != null) {
+            return primary[mapped];
+        }
+        return primary['?'];
+    }
+
+    protected static char mapUnsupportedChar(char c) {
+        switch (c) {
+            case '\u2022':
+            case '\u25CF':
+            case '\u2219':
+                return '\u00B7';
+            case '\u2013':
+            case '\u2014':
+                return '-';
+            case '\u2018':
+            case '\u2019':
+                return '\'';
+            case '\u201C':
+            case '\u201D':
+                return '"';
+            case '\u2026':
+                return '.';
+            case '\u25B6':
+            case '\u25BA':
+                return '>';
+            case '\u25BC':
+                return 'v';
+            case '\u25B2':
+                return '^';
+            default:
+                return '?';
+        }
+    }
+
+    public void drawChar(CharData[] chars, char c, float x, float y) {
+        CharData data = resolveCharData(chars, c);
+        if (data == null) return;
+        drawQuad(x, y, data.width, data.height, data.storedX, data.storedY, data.width, data.height);
     }
 
     protected void drawQuad(float x, float y, float width, float height, float srcX, float srcY, float srcWidth, float srcHeight) {
@@ -124,14 +230,16 @@ public class CFont {
     }
 
     public int getHeight() {
-        return (this.fontHeight - 8) / 2;
+        return Math.max(4, (this.fontHeight - 8) / 2);
     }
 
     public int getStringWidth(String text) {
+        if (text == null || text.isEmpty()) return 0;
         int width = 0;
-        for (char c : text.toCharArray()) {
-            if (c < this.charData.length) {
-                width += this.charData[c].width - 8 + this.charOffset;
+        for (int i = 0; i < text.length(); i++) {
+            CharData data = resolveCharData(this.charData, text.charAt(i));
+            if (data != null) {
+                width += data.width - 8 + this.charOffset;
             }
         }
         return width / 2;
@@ -144,7 +252,7 @@ public class CFont {
     public void setAntiAlias(boolean antiAlias) {
         if (this.antiAlias != antiAlias) {
             this.antiAlias = antiAlias;
-            this.tex = setupTexture(this.font, antiAlias, this.fractionalMetrics, this.charData);
+            this.tex = setupTexture(this.font, antiAlias, this.fractionalMetrics, this.charData, this.extraChars);
         }
     }
 
@@ -155,7 +263,7 @@ public class CFont {
     public void setFractionalMetrics(boolean fractionalMetrics) {
         if (this.fractionalMetrics != fractionalMetrics) {
             this.fractionalMetrics = fractionalMetrics;
-            this.tex = setupTexture(this.font, this.antiAlias, fractionalMetrics, this.charData);
+            this.tex = setupTexture(this.font, this.antiAlias, fractionalMetrics, this.charData, this.extraChars);
         }
     }
 
@@ -165,7 +273,7 @@ public class CFont {
 
     public void setFont(Font font) {
         this.font = font;
-        this.tex = setupTexture(font, this.antiAlias, this.fractionalMetrics, this.charData);
+        this.tex = setupTexture(font, this.antiAlias, this.fractionalMetrics, this.charData, this.extraChars);
     }
 
     public static class CharData {
@@ -173,5 +281,6 @@ public class CFont {
         public int height;
         public int storedX;
         public int storedY;
+        boolean wrapped;
     }
 }

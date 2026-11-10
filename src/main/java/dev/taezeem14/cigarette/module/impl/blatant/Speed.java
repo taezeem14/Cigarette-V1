@@ -22,6 +22,11 @@ public class Speed extends Module {
     }
 
     @Override
+    public String getSuffix() {
+        return mode.getMode();
+    }
+
+    @Override
     public void onEnable() {
         if (mc.thePlayer != null) {
             moveSpeed = MoveUtil.getBaseMoveSpeed();

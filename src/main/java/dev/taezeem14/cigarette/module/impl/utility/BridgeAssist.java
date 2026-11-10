@@ -23,6 +23,11 @@ public class BridgeAssist extends Module {
         addSettings(yawSnap, pitchAssist, assistedPitch);
     }
 
+    @Override
+    public String getSuffix() {
+        return !yawSnap.is("None") ? yawSnap.getMode() : "Pitch";
+    }
+
     @EventTarget
     public void onTick(TickEvent event) {
         if (!event.isPre() || mc.thePlayer == null || mc.theWorld == null) return;

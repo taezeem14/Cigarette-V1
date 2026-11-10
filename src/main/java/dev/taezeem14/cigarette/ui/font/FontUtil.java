@@ -19,51 +19,53 @@ public final class FontUtil {
         if (initialized) return;
 
         try {
-            Font baseRegular = getFont("font.ttf", 18);
-            Font baseBold = getFont("font_bold.ttf", 18);
-            Font baseSmall = getFont("font.ttf", 14);
-            Font baseTitle = getFont("font_bold.ttf", 22);
+            Font baseRegular = getFont("SF-UI-Display-Regular.otf", Font.PLAIN, 17);
+            Font baseSmall = getFont("SF-UI-Display-Regular.otf", Font.PLAIN, 13);
+            Font baseBold = getFont("SF-UI-Display-Regular.otf", Font.BOLD, 17);
+            Font baseTitle = getFont("Comfortaa-Regular.ttf", Font.BOLD, 21);
 
             regular = new CFontRenderer(baseRegular, true, true);
-            bold = new CFontRenderer(baseBold, true, true);
             small = new CFontRenderer(baseSmall, true, true);
+            bold = new CFontRenderer(baseBold, true, true);
             title = new CFontRenderer(baseTitle, true, true);
 
             initialized = true;
         } catch (Exception e) {
             e.printStackTrace();
-            // Fallback to standard system font
-            Font fallback = new Font("Arial", Font.PLAIN, 18);
+            Font fallback = new Font("Arial", Font.PLAIN, 17);
             regular = new CFontRenderer(fallback, true, true);
+            small = new CFontRenderer(new Font("Arial", Font.PLAIN, 13), true, true);
             bold = new CFontRenderer(fallback.deriveFont(Font.BOLD), true, true);
-            small = new CFontRenderer(new Font("Arial", Font.PLAIN, 14), true, true);
-            title = new CFontRenderer(new Font("Arial", Font.BOLD, 22), true, true);
+            title = new CFontRenderer(new Font("Arial", Font.BOLD, 21), true, true);
             initialized = true;
         }
     }
 
-    private static Font getFont(String resourcePath, int size) {
-        try {
-            InputStream is = FontUtil.class.getResourceAsStream("/assets/minecraft/cigarette/fonts/" + resourcePath);
-            if (is == null) {
-                is = FontUtil.class.getResourceAsStream("/assets/minecraft/cigarette/" + resourcePath);
+    private static Font getFont(String resourceName, int style, int size) {
+        String[] candidatePaths = {
+                "/assets/cigarette/fonts/" + resourceName,
+                "/assets/minecraft/cigarette/fonts/" + resourceName,
+                "/assets/cigarette/" + resourceName
+        };
+
+        for (String path : candidatePaths) {
+            try (InputStream is = FontUtil.class.getResourceAsStream(path)) {
+                if (is != null) {
+                    Font font = Font.createFont(Font.TRUETYPE_FONT, is);
+                    return font.deriveFont(style, (float) size);
+                }
+            } catch (Exception ignored) {
             }
-            if (is != null) {
-                Font font = Font.createFont(Font.TRUETYPE_FONT, is);
-                return font.deriveFont(Font.PLAIN, (float) size);
-            }
-        } catch (Exception ignored) {
         }
 
-        // Clean fallback to SF Pro, Product Sans, or Arial
-        String[] fontNames = {"SF Pro Display", "Product Sans", "Segoe UI", "Arial"};
+        String[] fontNames = {"SF Pro Display", "Segoe UI", "Arial"};
         for (String name : fontNames) {
-            Font font = new Font(name, Font.PLAIN, size);
+            Font font = new Font(name, style, size);
             if (font.getFamily().equalsIgnoreCase(name)) {
                 return font;
             }
         }
-        return new Font("Arial", Font.PLAIN, size);
+        return new Font("Arial", style, size);
     }
 
     public static void ensureInitialized() {

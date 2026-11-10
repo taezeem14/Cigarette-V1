@@ -22,13 +22,19 @@ public class ChestStealer extends Module {
     private final DoubleSliderSetting delay = new DoubleSliderSetting("Delay", 60.0, 100.0, 20.0, 300.0, 5.0);
     private final BooleanSetting autoClose = new BooleanSetting("Auto Close", true);
     private final BooleanSetting nameCheck = new BooleanSetting("Name Check", true);
+    private final BooleanSetting randomizeOrder = new BooleanSetting("Randomize Order", true);
 
     private final TimerUtil timer = new TimerUtil();
     private long currentDelay = 80;
 
     public ChestStealer() {
         super("ChestStealer", "Automatically loots chests with humanized randomized delays", Category.UTILITY);
-        addSettings(delay, autoClose, nameCheck);
+        addSettings(delay, autoClose, nameCheck, randomizeOrder);
+    }
+
+    @Override
+    public String getSuffix() {
+        return String.format("%.0f-%.0f", delay.getValueMin(), delay.getValueMax());
     }
 
     @EventTarget
@@ -67,6 +73,9 @@ public class ChestStealer extends Module {
         }
 
         if (timer.hasTimeElapsed(currentDelay)) {
+            if (randomizeOrder.isEnabled()) {
+                Collections.shuffle(slotsWithItems);
+            }
             int slotToLoot = slotsWithItems.get(0);
             InventoryUtil.clickSlot(container.windowId, slotToLoot, 0, 1); // Shift click
 

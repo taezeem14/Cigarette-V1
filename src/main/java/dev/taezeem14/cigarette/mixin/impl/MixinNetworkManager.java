@@ -15,7 +15,7 @@ public class MixinNetworkManager {
 
     @Inject(method = "channelRead0*", at = @At("HEAD"), cancellable = true)
     private void onChannelRead(ChannelHandlerContext context, Packet<?> packet, CallbackInfo ci) {
-        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getEventBus() != null) {
+        if (Cigarette.INSTANCE != null && !Cigarette.INSTANCE.isDestructed() && Cigarette.INSTANCE.getEventBus() != null) {
             PacketEvent event = new PacketEvent(PacketEvent.Direction.INCOMING, packet);
             Cigarette.INSTANCE.getEventBus().post(event);
             if (event.isCancelled()) {
@@ -26,7 +26,7 @@ public class MixinNetworkManager {
 
     @Inject(method = "sendPacket(Lnet/minecraft/network/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
-        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getEventBus() != null) {
+        if (Cigarette.INSTANCE != null && !Cigarette.INSTANCE.isDestructed() && Cigarette.INSTANCE.getEventBus() != null) {
             PacketEvent event = new PacketEvent(PacketEvent.Direction.OUTGOING, packet);
             Cigarette.INSTANCE.getEventBus().post(event);
             if (event.isCancelled()) {

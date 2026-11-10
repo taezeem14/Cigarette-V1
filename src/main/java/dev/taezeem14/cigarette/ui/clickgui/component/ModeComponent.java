@@ -18,7 +18,7 @@ public class ModeComponent extends Component {
     public void render(float mouseX, float mouseY, float partialTicks) {
         boolean hovered = isHovered(mouseX, mouseY);
         if (hovered) {
-            RenderUtil.drawRect(x, y, width, height, 0x1AFFFFFF);
+            RenderUtil.drawRect(x, y, width, height, 0x16FFFFFF);
         }
 
         int textColor = hovered ? ColorUtil.TEXT_PRIMARY : ColorUtil.TEXT_MUTED;
@@ -27,14 +27,16 @@ public class ModeComponent extends Component {
         String currentMode = setting.getMode();
         int modeWidth = FontUtil.small.getStringWidth(currentMode);
         float badgeWidth = modeWidth + 10.0f;
-        float badgeHeight = height - 4.0f;
+        float badgeHeight = height - 3.5f;
         float badgeX = x + width - badgeWidth - 6.0f;
-        float badgeY = y + 2.0f;
+        float badgeY = y + (height - badgeHeight) / 2.0f;
 
-        RenderUtil.drawRoundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3.0f, 0xFF222226);
-        RenderUtil.drawRoundedOutline(badgeX, badgeY, badgeWidth, badgeHeight, 3.0f, 1.0f, 0xFF333338);
+        int accent = ColorUtil.getAccent();
+        RenderUtil.drawRoundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3.0f, hovered ? 0xFF262630 : 0xFF1E1E24);
+        RenderUtil.drawRoundedOutline(badgeX, badgeY, badgeWidth, badgeHeight, 3.0f, 1.0f,
+                hovered ? ColorUtil.modifyAlpha(accent, 180) : ColorUtil.BORDER);
 
-        FontUtil.small.drawString(currentMode, badgeX + 5.0f, badgeY + (badgeHeight - FontUtil.small.getHeight()) / 2.0f, ColorUtil.ACCENT);
+        FontUtil.small.drawCenteredString(currentMode, badgeX + badgeWidth / 2.0f, badgeY + (badgeHeight - FontUtil.small.getHeight()) / 2.0f, accent);
     }
 
     @Override

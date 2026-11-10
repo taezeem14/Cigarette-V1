@@ -5,6 +5,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 
 public final class RotationUtil {
 
@@ -80,14 +82,44 @@ public final class RotationUtil {
         return new Vec3(targetX, targetY, targetZ);
     }
 
-    public static float smoothSigmoid(float current, float target, float speed) {
+    public static float linearStep(float current, float target, float maxStep) {
         float diff = wrapAngleTo180(target - current);
-        if (Math.abs(diff) < 0.001F) return target;
+        if (maxStep <= 0.0F) {
+            return current;
+        }
+        if (Math.abs(diff) <= maxStep) {
+            return current + diff;
+        }
+        return current + Math.copySign(maxStep, diff);
+    }
 
-        // Sigmoid mapping: smooth acceleration & deceleration
-        double factor = 2.0 / (1.0 + Math.exp(-speed * 0.25)) - 1.0;
-        float step = (float) (diff * factor);
+    public static float smoothSigmoid(float current, float target, float speed) {
+        return smoothSigmoid(current, target, speed, 0.05F);
+    }
+
+    public static float smoothSigmoid(float current, float target, float speed, float deltaSeconds) {
+        float diff = wrapAngleTo180(target - current);
+        if (Math.abs(diff) < 0.001F) return current + diff;
+
+        float clampedDelta = Math.max(0.0001F, Math.min(0.25F, deltaSeconds));
+        // Sigmoid mapping: smooth acceleration & deceleration scaled relative to 20 TPS tick duration
+        double baseFactor = 2.0 / (1.0 + Math.exp(-speed * 0.25)) - 1.0;
+        baseFactor = Math.max(0.0, Math.min(0.9999, baseFactor));
+        double frameFactor = 1.0 - Math.pow(1.0 - baseFactor, clampedDelta * 20.0);
+        float step = (float) (diff * frameFactor);
         return current + step;
+    }
+
+    public static boolean isPhysicalKeyDown(int keyCode) {
+        if (keyCode < 0) {
+            if (!Mouse.isCreated()) return false;
+            int mouseButton = keyCode + 100;
+            return mouseButton >= 0 && mouseButton < Mouse.getButtonCount() && Mouse.isButtonDown(mouseButton);
+        }
+        if (keyCode > 0 && keyCode < Keyboard.KEYBOARD_SIZE) {
+            return Keyboard.isCreated() && Keyboard.isKeyDown(keyCode);
+        }
+        return false;
     }
 
     public static float applySensitivityGCD(float currentAngle, float targetAngle, float sensitivity) {

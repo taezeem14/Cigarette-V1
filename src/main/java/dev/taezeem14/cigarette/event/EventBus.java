@@ -49,6 +49,10 @@ public class EventBus {
         }
     }
 
+    public void clear() {
+        listenerMap.clear();
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends Event> T post(T event) {
         if (event == null) return null;

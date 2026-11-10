@@ -16,6 +16,11 @@ public class Criticals extends Module {
         addSettings(mode);
     }
 
+    @Override
+    public String getSuffix() {
+        return mode.getMode();
+    }
+
     @EventTarget
     public void onAttack(AttackEvent event) {
         if (mc.thePlayer == null || !mc.thePlayer.onGround) return;

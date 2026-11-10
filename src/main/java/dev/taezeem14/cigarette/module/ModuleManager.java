@@ -1,6 +1,6 @@
 package dev.taezeem14.cigarette.module;
 
-import dev.taezeem14.cigarette.event.impl.KeyEvent;
+import dev.taezeem14.cigarette.Cigarette;
 import dev.taezeem14.cigarette.module.impl.blatant.*;
 import dev.taezeem14.cigarette.module.impl.client.*;
 import dev.taezeem14.cigarette.module.impl.combat.*;
@@ -108,6 +108,9 @@ public class ModuleManager {
     }
 
     public void onKeyPressed(int keyCode) {
+        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.isDestructed()) {
+            return;
+        }
         if (keyCode <= Keyboard.KEY_NONE || keyCode >= 256) return;
 
         for (Module module : modules) {

@@ -93,19 +93,81 @@ public final class MoveUtil {
     }
 
     public static void fixMovement(float targetYaw) {
+        fixMovement(targetYaw, false);
+    }
+
+    public static void fixMovement(float targetYaw, boolean strict) {
         if (mc.thePlayer == null || mc.thePlayer.movementInput == null) return;
 
         float forward = mc.thePlayer.movementInput.moveForward;
         float strafe = mc.thePlayer.movementInput.moveStrafe;
+        if (forward == 0.0F && strafe == 0.0F) return;
+
+        float inputScale = mc.thePlayer.movementInput.sneak ? 0.3F : 1.0F;
+        float inputMax = Math.max(Math.abs(forward), Math.abs(strafe));
+        float normForward = forward / inputMax;
+        float normStrafe = strafe / inputMax;
+
+        if (strict) {
+            double desiredAngle = calcMoveAngle(mc.thePlayer.rotationYaw, normForward, normStrafe);
+            float bestForward = 0.0F;
+            float bestStrafe = 0.0F;
+            double bestError = Double.MAX_VALUE;
+
+            for (int f = -1; f <= 1; f++) {
+                for (int s = -1; s <= 1; s++) {
+                    if (f == 0 && s == 0) continue;
+                    double candidateAngle = calcMoveAngle(targetYaw, f, s);
+                    double error = Math.abs(wrapAngleRadians(desiredAngle - candidateAngle));
+                    if (error < bestError) {
+                        bestError = error;
+                        bestForward = (float) f;
+                        bestStrafe = (float) s;
+                    }
+                }
+            }
+
+            mc.thePlayer.movementInput.moveForward = bestForward * inputScale;
+            mc.thePlayer.movementInput.moveStrafe = bestStrafe * inputScale;
+            return;
+        }
 
         float diff = MathHelper.wrapAngleTo180_float(mc.thePlayer.rotationYaw - targetYaw);
         double rad = Math.toRadians(diff);
+        double cos = Math.cos(rad);
+        double sin = Math.sin(rad);
 
-        float fixedForward = (float) (forward * Math.cos(rad) - strafe * Math.sin(rad));
-        float fixedStrafe = (float) (forward * Math.sin(rad) + strafe * Math.cos(rad));
+        double fixedForward = normForward * cos + normStrafe * sin;
+        double fixedStrafe = normStrafe * cos - normForward * sin;
 
-        mc.thePlayer.movementInput.moveForward = Math.round(fixedForward);
-        mc.thePlayer.movementInput.moveStrafe = Math.round(fixedStrafe);
+        int discreteForward = Math.max(-1, Math.min(1, (int) Math.round(fixedForward)));
+        int discreteStrafe = Math.max(-1, Math.min(1, (int) Math.round(fixedStrafe)));
+
+        if (discreteForward == 0 && discreteStrafe == 0) {
+            if (Math.abs(fixedForward) >= Math.abs(fixedStrafe)) {
+                discreteForward = fixedForward >= 0.0 ? 1 : -1;
+            } else {
+                discreteStrafe = fixedStrafe >= 0.0 ? 1 : -1;
+            }
+        }
+
+        mc.thePlayer.movementInput.moveForward = discreteForward * inputScale;
+        mc.thePlayer.movementInput.moveStrafe = discreteStrafe * inputScale;
+    }
+
+    private static double calcMoveAngle(float yaw, float forward, float strafe) {
+        double rad = Math.toRadians(yaw);
+        double sin = Math.sin(rad);
+        double cos = Math.cos(rad);
+        double motionX = strafe * cos - forward * sin;
+        double motionZ = forward * cos + strafe * sin;
+        return Math.atan2(motionX, motionZ);
+    }
+
+    private static double wrapAngleRadians(double angle) {
+        while (angle > Math.PI) angle -= Math.PI * 2.0;
+        while (angle <= -Math.PI) angle += Math.PI * 2.0;
+        return angle;
     }
 
     public static void jump() {

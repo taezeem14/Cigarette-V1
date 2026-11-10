@@ -20,6 +20,11 @@ public class Teams extends Module {
         instance = this;
     }
 
+    @Override
+    public String getSuffix() {
+        return scoreboardTeam.isEnabled() ? "Scoreboard" : "Armor";
+    }
+
     public static boolean isTeammate(EntityPlayer player) {
         if (instance == null || !instance.isEnabled() || player == null || mc.thePlayer == null) {
             return false;

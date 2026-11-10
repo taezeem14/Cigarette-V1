@@ -9,6 +9,8 @@
     "MixinMinecraft",
     "MixinEntityRenderer",
     "MixinEntityPlayerSP",
+    "MixinPlayerControllerMP",
+    "MixinEntityPlayer",
     "MixinNetworkManager",
     "MixinGuiIngame",
     "MixinRendererLivingEntity"

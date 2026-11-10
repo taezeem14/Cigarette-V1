@@ -20,23 +20,28 @@ public class KeybindComponent extends Component {
     public void render(float mouseX, float mouseY, float partialTicks) {
         boolean hovered = isHovered(mouseX, mouseY);
         if (hovered) {
-            RenderUtil.drawRect(x, y, width, height, 0x1AFFFFFF);
+            RenderUtil.drawRect(x, y, width, height, 0x16FFFFFF);
         }
 
-        int textColor = hovered ? ColorUtil.TEXT_PRIMARY : ColorUtil.TEXT_MUTED;
+        int textColor = hovered || listening ? ColorUtil.TEXT_PRIMARY : ColorUtil.TEXT_MUTED;
         FontUtil.small.drawString(setting.getName(), x + 6.0f, y + (height - FontUtil.small.getHeight()) / 2.0f, textColor);
 
-        String keyText = listening ? "[ ... ]" : "[" + setting.getKeyName() + "]";
+        String keyText = listening ? "..." : setting.getKeyName();
         int keyWidth = FontUtil.small.getStringWidth(keyText);
-        float badgeWidth = keyWidth + 8.0f;
-        float badgeHeight = height - 4.0f;
+        float badgeWidth = Math.max(20.0f, keyWidth + 10.0f);
+        float badgeHeight = height - 3.5f;
         float badgeX = x + width - badgeWidth - 6.0f;
-        float badgeY = y + 2.0f;
+        float badgeY = y + (height - badgeHeight) / 2.0f;
 
-        RenderUtil.drawRoundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3.0f, 0xFF222226);
-        RenderUtil.drawRoundedOutline(badgeX, badgeY, badgeWidth, badgeHeight, 3.0f, 1.0f, listening ? ColorUtil.ACCENT : 0xFF333338);
+        int accent = ColorUtil.getAccent();
+        RenderUtil.drawRoundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 2.5f,
+                listening ? ColorUtil.modifyAlpha(accent, 45) : 0xFF1F1F26);
+        RenderUtil.drawRoundedOutline(badgeX, badgeY, badgeWidth, badgeHeight, 2.5f, 1.0f,
+                listening ? accent : ColorUtil.BORDER);
 
-        FontUtil.small.drawString(keyText, badgeX + 4.0f, badgeY + (badgeHeight - FontUtil.small.getHeight()) / 2.0f, listening ? ColorUtil.ACCENT : ColorUtil.TEXT_PRIMARY);
+        FontUtil.small.drawCenteredString(keyText, badgeX + badgeWidth / 2.0f,
+                badgeY + (badgeHeight - FontUtil.small.getHeight()) / 2.0f,
+                listening ? accent : ColorUtil.TEXT_PRIMARY);
     }
 
     @Override
@@ -51,7 +56,7 @@ public class KeybindComponent extends Component {
     @Override
     public void keyTyped(char typedChar, int keyCode) {
         if (listening) {
-            if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_DELETE) {
+            if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_DELETE || keyCode == Keyboard.KEY_BACK) {
                 setting.setKeyCode(Keyboard.KEY_NONE);
             } else {
                 setting.setKeyCode(keyCode);

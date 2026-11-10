@@ -15,6 +15,7 @@ public class Fly extends Module {
     private final NumberSetting speedVal = new NumberSetting("Speed", 2.0, 0.5, 5.0, 0.1);
 
     private boolean boosted = false;
+    private int boostTicks = 0;
 
     public Fly() {
         super("Fly", "Allows the player to fly in survival mode", Category.BLATANT);
@@ -22,8 +23,14 @@ public class Fly extends Module {
     }
 
     @Override
+    public String getSuffix() {
+        return mode.getMode();
+    }
+
+    @Override
     public void onEnable() {
         boosted = false;
+        boostTicks = 0;
         if (mc.thePlayer == null) return;
 
         if (mode.is("Vanilla")) {
@@ -33,6 +40,8 @@ public class Fly extends Module {
 
     @Override
     public void onDisable() {
+        boosted = false;
+        boostTicks = 0;
         if (mc.thePlayer == null) return;
 
         if (mode.is("Vanilla") && !mc.thePlayer.capabilities.isCreativeMode) {
@@ -50,11 +59,20 @@ public class Fly extends Module {
         if (mode.is("Damage Boost")) {
             if (mc.thePlayer.hurtTime > 0 && !boosted) {
                 boosted = true;
+                boostTicks = 0;
                 MoveUtil.strafe(speedVal.getValue() * 2.5);
                 mc.thePlayer.motionY = 0.42;
             } else if (boosted) {
-                mc.thePlayer.motionY = -0.04;
-                MoveUtil.strafe(speedVal.getValue());
+                boostTicks++;
+                if (boostTicks > 2 && mc.thePlayer.onGround) {
+                    boosted = false;
+                    boostTicks = 0;
+                    mc.thePlayer.motionX *= 0.6;
+                    mc.thePlayer.motionZ *= 0.6;
+                } else {
+                    mc.thePlayer.motionY = -0.04;
+                    MoveUtil.strafe(speedVal.getValue());
+                }
             }
         }
     }

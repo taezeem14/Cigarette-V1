@@ -33,31 +33,56 @@ public class ThrowPot extends Module {
         addSettings(healthThreshold, speedPot, healthPot, pitch);
     }
 
+    @Override
+    public String getSuffix() {
+        return String.format("%.1f", healthThreshold.getValue());
+    }
+
+    @Override
+    public void onDisable() {
+        throwing = false;
+        originalSlot = -1;
+        potSlot = -1;
+    }
+
     @EventTarget
     public void onMotion(MotionEvent event) {
-        if (mc.thePlayer == null || mc.theWorld == null || mc.currentScreen != null) return;
+        if (mc.thePlayer == null || mc.theWorld == null || mc.currentScreen != null) {
+            throwing = false;
+            return;
+        }
 
         if (event.isPre()) {
-            if (!timer.hasTimeElapsed(500L)) return;
+            if (!timer.hasTimeElapsed(500L)) {
+                throwing = false;
+                return;
+            }
 
             potSlot = findPotionSlot();
             if (potSlot != -1) {
                 originalSlot = mc.thePlayer.inventory.currentItem;
                 throwing = true;
                 event.setPitch(pitch.getValueFloat());
-
-                mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(potSlot));
-                ItemStack potStack = mc.thePlayer.inventory.getStackInSlot(potSlot);
-                mc.getNetHandler().addToSendQueue(new C08PacketPlayerBlockPlacement(potStack));
+            } else {
+                throwing = false;
             }
         } else if (event.isPost()) {
-            if (throwing) {
-                if (originalSlot != -1) {
-                    mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(originalSlot));
+            if (throwing && mc.getNetHandler() != null && potSlot >= 0 && potSlot < 9) {
+                ItemStack potStack = mc.thePlayer.inventory.getStackInSlot(potSlot);
+                if (potStack != null && potStack.getItem() instanceof ItemPotion) {
+                    if (potSlot != originalSlot) {
+                        mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(potSlot));
+                    }
+                    mc.getNetHandler().addToSendQueue(new C08PacketPlayerBlockPlacement(potStack));
+                    if (originalSlot != -1 && potSlot != originalSlot) {
+                        mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(originalSlot));
+                    }
                 }
-                throwing = false;
                 timer.reset();
             }
+            throwing = false;
+            originalSlot = -1;
+            potSlot = -1;
         }
     }
 

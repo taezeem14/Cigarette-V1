@@ -10,13 +10,20 @@ import dev.taezeem14.cigarette.setting.impl.ColorSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.render.RenderUtil;
 import net.minecraft.block.Block;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BedESP extends Module {
 
@@ -27,9 +34,10 @@ public class BedESP extends Module {
     private final NumberSetting lineWidth = new NumberSetting("Line Width", 1.5, 0.5, 3.0, 0.1);
     private final BooleanSetting defenseOverlay = new BooleanSetting("Defense Overlay", true);
 
-    private final List<BlockPos> bedPositions = new CopyOnWriteArrayList<>();
+    private final List<AxisAlignedBB> bedBoxes = new CopyOnWriteArrayList<>();
     private final List<DefenseBlock> defenseBlocks = new CopyOnWriteArrayList<>();
-    private int tickCounter = 0;
+    private final AtomicBoolean scanInFlight = new AtomicBoolean(false);
+    private ScheduledExecutorService scannerExecutor;
 
     public BedESP() {
         super("BedESP", "Highlights beds and defense layers in Bedwars / Eggwars", Category.RENDER);
@@ -37,58 +45,125 @@ public class BedESP extends Module {
     }
 
     @Override
+    public void onEnable() {
+        if (scannerExecutor == null || scannerExecutor.isShutdown()) {
+            scannerExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "BedESP-Scanner");
+                t.setDaemon(true);
+                return t;
+            });
+            scannerExecutor.scheduleWithFixedDelay(this::scanWorldSafe, 0L, 1000L, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Override
     public void onDisable() {
-        bedPositions.clear();
+        if (scannerExecutor != null && !scannerExecutor.isShutdown()) {
+            scannerExecutor.shutdownNow();
+            scannerExecutor = null;
+        }
+        scanInFlight.set(false);
+        bedBoxes.clear();
         defenseBlocks.clear();
     }
 
     @EventTarget
     public void onTick(TickEvent event) {
-        if (mc.theWorld == null || mc.thePlayer == null) return;
-
-        if (tickCounter++ % 20 == 0) {
-            scanWorld();
-        }
+        // Scanning runs safely on the single daemon ScheduledExecutorService
     }
 
-    private void scanWorld() {
-        new Thread(() -> {
-            if (mc.theWorld == null || mc.thePlayer == null) return;
+    private void scanWorldSafe() {
+        if (!isEnabled() || !scanInFlight.compareAndSet(false, true)) {
+            return;
+        }
+
+        try {
+            WorldClient world = mc.theWorld;
+            if (world == null || mc.thePlayer == null) {
+                bedBoxes.clear();
+                defenseBlocks.clear();
+                return;
+            }
 
             int radius = scanRadius.getValueInt();
-            int playerX = (int) mc.thePlayer.posX;
-            int playerY = (int) mc.thePlayer.posY;
-            int playerZ = (int) mc.thePlayer.posZ;
+            int playerX = (int) Math.floor(mc.thePlayer.posX);
+            int playerY = (int) Math.floor(mc.thePlayer.posY);
+            int playerZ = (int) Math.floor(mc.thePlayer.posZ);
 
-            List<BlockPos> foundBeds = new ArrayList<>();
-            List<DefenseBlock> foundDefense = new ArrayList<>();
-
+            List<BlockPos> rawBeds = new ArrayList<>();
             for (int x = -radius; x <= radius; x++) {
                 for (int y = -16; y <= 16; y++) {
                     for (int z = -radius; z <= radius; z++) {
                         BlockPos pos = new BlockPos(playerX + x, playerY + y, playerZ + z);
-                        Block block = mc.theWorld.getBlockState(pos).getBlock();
-
+                        Block block = world.getBlockState(pos).getBlock();
                         if (block == Blocks.bed) {
-                            foundBeds.add(pos);
-
-                            if (defenseOverlay.isEnabled()) {
-                                scanDefense(pos, foundDefense);
-                            }
+                            rawBeds.add(pos);
                         }
                     }
                 }
             }
 
-            bedPositions.clear();
-            bedPositions.addAll(foundBeds);
+            Set<BlockPos> bedSet = new HashSet<>(rawBeds);
+            Set<BlockPos> visitedBeds = new HashSet<>();
+            Set<BlockPos> visitedDefense = new HashSet<>();
+            List<AxisAlignedBB> mergedBeds = new ArrayList<>();
+            List<DefenseBlock> foundDefense = new ArrayList<>();
+            boolean scanDef = defenseOverlay.isEnabled();
+
+            for (BlockPos pos : rawBeds) {
+                if (!visitedBeds.add(pos)) {
+                    continue;
+                }
+
+                // Combine adjacent bed half into one unified bounding box
+                BlockPos pairPos = findAdjacentBed(pos, bedSet, visitedBeds);
+                double minX = pos.getX();
+                double minY = pos.getY();
+                double minZ = pos.getZ();
+                double maxX = pos.getX() + 1.0;
+                double maxY = pos.getY() + 0.5625;
+                double maxZ = pos.getZ() + 1.0;
+
+                if (pairPos != null) {
+                    visitedBeds.add(pairPos);
+                    minX = Math.min(minX, pairPos.getX());
+                    minZ = Math.min(minZ, pairPos.getZ());
+                    maxX = Math.max(maxX, pairPos.getX() + 1.0);
+                    maxZ = Math.max(maxZ, pairPos.getZ() + 1.0);
+                }
+
+                mergedBeds.add(new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ));
+
+                if (scanDef) {
+                    scanDefense(world, pos, visitedDefense, foundDefense);
+                    if (pairPos != null) {
+                        scanDefense(world, pairPos, visitedDefense, foundDefense);
+                    }
+                }
+            }
+
+            bedBoxes.clear();
+            bedBoxes.addAll(mergedBeds);
 
             defenseBlocks.clear();
             defenseBlocks.addAll(foundDefense);
-        }, "BedESP-Scanner").start();
+        } catch (Throwable ignored) {
+        } finally {
+            scanInFlight.set(false);
+        }
     }
 
-    private void scanDefense(BlockPos bedPos, List<DefenseBlock> output) {
+    private BlockPos findAdjacentBed(BlockPos pos, Set<BlockPos> bedSet, Set<BlockPos> visited) {
+        BlockPos[] horizontal = {pos.north(), pos.south(), pos.east(), pos.west()};
+        for (BlockPos neighbor : horizontal) {
+            if (bedSet.contains(neighbor) && !visited.contains(neighbor)) {
+                return neighbor;
+            }
+        }
+        return null;
+    }
+
+    private void scanDefense(WorldClient world, BlockPos bedPos, Set<BlockPos> visitedDefense, List<DefenseBlock> output) {
         BlockPos[] neighbors = {
                 bedPos.up(), bedPos.down(),
                 bedPos.north(), bedPos.south(),
@@ -96,15 +171,18 @@ public class BedESP extends Module {
         };
 
         for (BlockPos neighbor : neighbors) {
-            Block block = mc.theWorld.getBlockState(neighbor).getBlock();
+            if (!visitedDefense.add(neighbor)) {
+                continue;
+            }
+            Block block = world.getBlockState(neighbor).getBlock();
             if (block == Blocks.obsidian) {
-                output.add(new DefenseBlock(neighbor, 0xFF4A148C)); // Dark Purple
+                output.add(new DefenseBlock(neighbor, 0xFF4A148C));
             } else if (block == Blocks.end_stone) {
-                output.add(new DefenseBlock(neighbor, 0xFFFFF59D)); // Pale Yellow
+                output.add(new DefenseBlock(neighbor, 0xFFFFF59D));
             } else if (block == Blocks.planks) {
-                output.add(new DefenseBlock(neighbor, 0xFF8D6E63)); // Brown Wood
+                output.add(new DefenseBlock(neighbor, 0xFF8D6E63));
             } else if (block == Blocks.stained_hardened_clay) {
-                output.add(new DefenseBlock(neighbor, 0xFFFF7043)); // Clay
+                output.add(new DefenseBlock(neighbor, 0xFFFF7043));
             }
         }
     }
@@ -113,17 +191,10 @@ public class BedESP extends Module {
     public void onRender3D(Render3DEvent event) {
         if (mc.theWorld == null || mc.thePlayer == null) return;
 
-        // Render Beds
-        for (BlockPos pos : bedPositions) {
-            AxisAlignedBB bb = new AxisAlignedBB(
-                    pos.getX(), pos.getY(), pos.getZ(),
-                    pos.getX() + 1.0, pos.getY() + 0.5625, pos.getZ() + 1.0
-            );
-
+        for (AxisAlignedBB bb : bedBoxes) {
             RenderUtil.draw3DBox(bb, bedColor.getRGB(), fill.isEnabled(), outline.isEnabled(), lineWidth.getValueFloat());
         }
 
-        // Render Defenses
         if (defenseOverlay.isEnabled()) {
             for (DefenseBlock defense : defenseBlocks) {
                 BlockPos pos = defense.pos;
@@ -131,7 +202,6 @@ public class BedESP extends Module {
                         pos.getX(), pos.getY(), pos.getZ(),
                         pos.getX() + 1.0, pos.getY() + 1.0, pos.getZ() + 1.0
                 );
-
                 RenderUtil.draw3DBox(bb, defense.color, fill.isEnabled(), outline.isEnabled(), 1.0f);
             }
         }

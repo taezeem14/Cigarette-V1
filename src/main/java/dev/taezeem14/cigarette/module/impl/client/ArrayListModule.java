@@ -11,7 +11,7 @@ public class ArrayListModule extends Module {
 
     private static ArrayListModule instance;
 
-    private final ModeSetting colorMode = new ModeSetting("Color Mode", "Rainbow", "Rainbow", "Astolfo", "Static");
+    private final ModeSetting colorMode = new ModeSetting("Color Mode", "Theme", "Theme", "Rainbow", "Astolfo", "Static");
     private final ColorSetting staticColor = new ColorSetting("Static Color", 0xFF3882F6);
     private final NumberSetting rainbowSpeed = new NumberSetting("Rainbow Speed", 1.0, 0.5, 3.0, 0.1);
     private final BooleanSetting background = new BooleanSetting("Background", true);
@@ -22,6 +22,7 @@ public class ArrayListModule extends Module {
     public ArrayListModule() {
         super("ArrayList", "Displays enabled modules on screen", Category.CLIENT);
         addSettings(colorMode, staticColor, rainbowSpeed, background, suffix, font, animation);
+        setState(true);
         instance = this;
     }
 
@@ -45,8 +46,17 @@ public class ArrayListModule extends Module {
         return background;
     }
 
-    public BooleanSetting getSuffix() {
+    public BooleanSetting getSuffixSetting() {
         return suffix;
+    }
+
+    public boolean isSuffixEnabled() {
+        return suffix.isEnabled();
+    }
+
+    @Override
+    public String getSuffix() {
+        return colorMode.getMode();
     }
 
     public ModeSetting getFont() {

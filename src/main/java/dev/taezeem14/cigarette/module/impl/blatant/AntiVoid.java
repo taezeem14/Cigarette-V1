@@ -21,6 +21,11 @@ public class AntiVoid extends Module {
         addSettings(fallDist, mode);
     }
 
+    @Override
+    public String getSuffix() {
+        return mode.getMode();
+    }
+
     @EventTarget
     public void onMotion(MotionEvent event) {
         if (!event.isPre() || mc.thePlayer == null || mc.theWorld == null) return;

@@ -5,6 +5,7 @@ import dev.taezeem14.cigarette.event.EventTarget;
 import dev.taezeem14.cigarette.event.impl.Render3DEvent;
 import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
+import dev.taezeem14.cigarette.module.impl.utility.AntiBot;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.ui.font.FontUtil;
@@ -49,11 +50,13 @@ public class Nametags extends Module {
     public void onRender3D(Render3DEvent event) {
         if (mc.theWorld == null || mc.thePlayer == null) return;
 
+        FontUtil.ensureInitialized();
         RenderManager rm = mc.getRenderManager();
         float partialTicks = event.getPartialTicks();
 
         for (EntityPlayer player : mc.theWorld.playerEntities) {
             if (player == mc.thePlayer || player.isDead) continue;
+            if (player.getEntityId() == -1337 || AntiBot.isBot(player)) continue;
 
             double x = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks - rm.viewerPosX;
             double y = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks - rm.viewerPosY + player.height + 0.55;
@@ -62,61 +65,65 @@ public class Nametags extends Module {
             float distance = mc.thePlayer.getDistanceToEntity(player);
             float scale = Math.max(distance / 50.0f, 1.0f) * (scaleFactor.getValueFloat() * 0.015f);
 
-            GL11.glPushMatrix();
-            GL11.glTranslated(x, y, z);
-            GL11.glNormal3f(0.0f, 1.0f, 0.0f);
-            GL11.glRotatef(-rm.playerViewY, 0.0f, 1.0f, 0.0f);
-            GL11.glRotatef(rm.playerViewX, 1.0f, 0.0f, 0.0f);
-            GL11.glScalef(-scale, -scale, scale);
+            GlStateManager.pushMatrix();
+            try {
+                GlStateManager.translate(x, y, z);
+                GL11.glNormal3f(0.0f, 1.0f, 0.0f);
+                GlStateManager.rotate(-rm.playerViewY, 0.0f, 1.0f, 0.0f);
+                GlStateManager.rotate(rm.playerViewX, 1.0f, 0.0f, 0.0f);
+                GlStateManager.scale(-scale, -scale, scale);
 
-            GlStateManager.disableLighting();
-            GlStateManager.depthMask(false);
-            GlStateManager.disableDepth();
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                GlStateManager.disableLighting();
+                GlStateManager.depthMask(false);
+                GlStateManager.disableDepth();
+                GlStateManager.enableBlend();
+                GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
 
-            // Construct text: [dist] Name [health HP]
-            StringBuilder text = new StringBuilder();
-            if (showDistance.isEnabled()) {
-                text.append("§7[").append((int) distance).append("m] ");
+                StringBuilder text = new StringBuilder();
+                if (showDistance.isEnabled()) {
+                    text.append("\u00a77[").append((int) distance).append("m] ");
+                }
+                text.append(player.getName());
+                if (showHealth.isEnabled()) {
+                    float hp = player.getHealth() + player.getAbsorptionAmount();
+                    text.append(" \u00a7f[").append(HP_FORMAT.format(hp)).append("]");
+                }
+
+                String tagStr = text.toString();
+                int width = FontUtil.regular.getStringWidth(tagStr);
+                float tagW = width + 10.0f;
+                float tagH = 14.0f;
+                float tagX = -tagW / 2.0f;
+                float tagY = -tagH / 2.0f;
+
+                // Background & Border
+                RenderUtil.drawRoundedRect(tagX, tagY, tagW, tagH, 2.5f, 0xA8141418);
+                RenderUtil.drawRoundedOutline(tagX, tagY, tagW, tagH, 2.5f, 1.0f, ColorUtil.BORDER);
+
+                // Health color bar under tag
+                if (showHealth.isEnabled()) {
+                    float maxHp = Math.max(1.0f, player.getMaxHealth());
+                    int hpCol = ColorUtil.getHealthColor(player.getHealth(), maxHp);
+                    float hpRatio = Math.max(0.0f, Math.min(1.0f, player.getHealth() / maxHp));
+                    RenderUtil.drawRect(tagX + 1.0f, tagY + tagH - 1.5f, (tagW - 2.0f) * hpRatio, 1.5f, hpCol);
+                }
+
+                // Ensure depth stays disabled before rendering tag text & gear
+                GlStateManager.disableDepth();
+                GlStateManager.depthMask(false);
+                FontUtil.regular.drawStringWithShadow(tagStr, tagX + 5.0f, tagY + (tagH - FontUtil.regular.getHeight()) / 2.0f - 0.5f, ColorUtil.TEXT_PRIMARY);
+
+                if (showItems.isEnabled()) {
+                    renderEquipment(player, tagY);
+                }
+            } finally {
+                GlStateManager.enableDepth();
+                GlStateManager.depthMask(true);
+                GlStateManager.enableLighting();
+                GlStateManager.disableBlend();
+                GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+                GlStateManager.popMatrix();
             }
-            text.append(player.getName());
-            if (showHealth.isEnabled()) {
-                float hp = player.getHealth() + player.getAbsorptionAmount();
-                text.append(" §f[").append(HP_FORMAT.format(hp)).append("]");
-            }
-
-            String tagStr = text.toString();
-            int width = FontUtil.regular.getStringWidth(tagStr);
-            float tagW = width + 10.0f;
-            float tagH = 14.0f;
-            float tagX = -tagW / 2.0f;
-            float tagY = -tagH / 2.0f;
-
-            // Background & Border
-            RenderUtil.drawRoundedRect(tagX, tagY, tagW, tagH, 2.5f, 0x88141416);
-            RenderUtil.drawRoundedOutline(tagX, tagY, tagW, tagH, 2.5f, 1.0f, 0xFF25252C);
-
-            // Health color line under tag
-            if (showHealth.isEnabled()) {
-                int hpCol = ColorUtil.getHealthColor(player.getHealth(), player.getMaxHealth());
-                float hpRatio = Math.max(0.0f, Math.min(1.0f, player.getHealth() / player.getMaxHealth()));
-                RenderUtil.drawRect(tagX, tagY + tagH - 1.5f, tagW * hpRatio, 1.5f, hpCol);
-            }
-
-            // Draw String
-            FontUtil.regular.drawString(tagStr, tagX + 5.0f, tagY + (tagH - FontUtil.regular.getHeight()) / 2.0f - 0.5f, ColorUtil.TEXT_PRIMARY);
-
-            // Render Equipment Icons
-            if (showItems.isEnabled()) {
-                renderEquipment(player, tagY);
-            }
-
-            GlStateManager.enableDepth();
-            GlStateManager.depthMask(true);
-            GlStateManager.enableLighting();
-            GlStateManager.disableBlend();
-            GL11.glPopMatrix();
         }
     }
 
@@ -140,6 +147,8 @@ public class Nametags extends Module {
 
         RenderHelper.enableGUIStandardItemLighting();
         GlStateManager.enableRescaleNormal();
+        GlStateManager.disableDepth();
+        GlStateManager.depthMask(false);
 
         for (ItemStack stack : items) {
             mc.getRenderItem().renderItemAndEffectIntoGUI(stack, (int) startX, (int) itemY);
@@ -149,5 +158,8 @@ public class Nametags extends Module {
 
         RenderHelper.disableStandardItemLighting();
         GlStateManager.disableRescaleNormal();
+        GlStateManager.disableLighting();
+        GlStateManager.disableDepth();
+        GlStateManager.depthMask(false);
     }
 }

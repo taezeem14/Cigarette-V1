@@ -16,6 +16,11 @@ public class HitBoxes extends Module {
         instance = this;
     }
 
+    @Override
+    public String getSuffix() {
+        return String.format("%.2f", expand.getValue());
+    }
+
     public static float getExpansionSize() {
         if (instance == null || !instance.isEnabled()) {
             return 0.0F;

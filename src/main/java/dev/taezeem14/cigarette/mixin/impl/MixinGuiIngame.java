@@ -14,7 +14,7 @@ public abstract class MixinGuiIngame {
 
     @Inject(method = "renderTooltip", at = @At("RETURN"))
     private void onRenderTooltip(ScaledResolution sr, float partialTicks, CallbackInfo ci) {
-        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getEventBus() != null) {
+        if (Cigarette.INSTANCE != null && !Cigarette.INSTANCE.isDestructed() && Cigarette.INSTANCE.getEventBus() != null) {
             Cigarette.INSTANCE.getEventBus().post(new Render2DEvent(partialTicks, sr));
         }
     }

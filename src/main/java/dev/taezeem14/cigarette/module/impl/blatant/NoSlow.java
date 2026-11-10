@@ -31,6 +31,11 @@ public class NoSlow extends Module {
         instance = this;
     }
 
+    @Override
+    public String getSuffix() {
+        return mode.getMode();
+    }
+
     public static boolean shouldCancelSlowdown() {
         if (instance == null || !instance.isEnabled() || mc.thePlayer == null) {
             return false;

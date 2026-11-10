@@ -6,12 +6,12 @@ import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
 import dev.taezeem14.cigarette.setting.impl.DoubleSliderSetting;
+import dev.taezeem14.cigarette.util.math.RotationUtil;
 import dev.taezeem14.cigarette.util.math.TimerUtil;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
-import org.lwjgl.input.Keyboard;
 
 public class Eagle extends Module {
 
@@ -29,10 +29,15 @@ public class Eagle extends Module {
     }
 
     @Override
+    public String getSuffix() {
+        return String.format("%.0f-%.0f", delay.getValueMin(), delay.getValueMax());
+    }
+
+    @Override
     public void onDisable() {
-        if (sneaking && mc.thePlayer != null) {
+        if (sneaking && mc.thePlayer != null && mc.gameSettings != null) {
             int sneakKey = mc.gameSettings.keyBindSneak.getKeyCode();
-            KeyBinding.setKeyBindState(sneakKey, Keyboard.isKeyDown(sneakKey));
+            KeyBinding.setKeyBindState(sneakKey, RotationUtil.isPhysicalKeyDown(sneakKey));
             sneaking = false;
         }
     }
@@ -76,8 +81,10 @@ public class Eagle extends Module {
     }
 
     private void resetSneak() {
-        int sneakKey = mc.gameSettings.keyBindSneak.getKeyCode();
-        KeyBinding.setKeyBindState(sneakKey, Keyboard.isKeyDown(sneakKey));
+        if (mc.gameSettings != null) {
+            int sneakKey = mc.gameSettings.keyBindSneak.getKeyCode();
+            KeyBinding.setKeyBindState(sneakKey, RotationUtil.isPhysicalKeyDown(sneakKey));
+        }
         sneaking = false;
     }
 }

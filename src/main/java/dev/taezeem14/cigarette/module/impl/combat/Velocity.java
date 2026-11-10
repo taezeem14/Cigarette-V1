@@ -10,7 +10,6 @@ import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.mapping.MappingResolver;
 import dev.taezeem14.cigarette.util.math.RandomUtil;
-import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.network.play.server.S27PacketExplosion;
 
@@ -24,12 +23,40 @@ public class Velocity extends Module {
     private final BooleanSetting waterCheck = new BooleanSetting("Water Check", false);
 
     private boolean pendingVelocity = false;
+    private boolean pendingIsExplosion = false;
     private int delayTicks = 0;
     private double delayedMotionX, delayedMotionY, delayedMotionZ;
 
     public Velocity() {
         super("Velocity", "Reduces or eliminates incoming knockback", Category.COMBAT);
         addSettings(mode, horizontal, vertical, chance, onlyTargeting, waterCheck);
+    }
+
+    @Override
+    public String getSuffix() {
+        if (mode.is("Simple")) {
+            return horizontal.getValueInt() + "% " + vertical.getValueInt() + "%";
+        }
+        if (mode.is("Delay")) {
+            return "Delay " + horizontal.getValueInt() + "% " + vertical.getValueInt() + "%";
+        }
+        return mode.getMode();
+    }
+
+    @Override
+    public void onEnable() {
+        resetPendingState();
+    }
+
+    @Override
+    public void onDisable() {
+        resetPendingState();
+    }
+
+    private void resetPendingState() {
+        pendingVelocity = false;
+        pendingIsExplosion = false;
+        delayTicks = 0;
     }
 
     @EventTarget
@@ -78,15 +105,16 @@ public class Velocity extends Module {
                 delayedMotionX = (packet.getMotionX() / 8000.0) * h;
                 delayedMotionY = (packet.getMotionY() / 8000.0) * v;
                 delayedMotionZ = (packet.getMotionZ() / 8000.0) * h;
+                pendingIsExplosion = false;
                 pendingVelocity = true;
                 delayTicks = 2;
             }
         } else if (event.getPacket() instanceof S27PacketExplosion) {
             S27PacketExplosion packet = (S27PacketExplosion) event.getPacket();
-            if (mode.is("Simple")) {
-                double h = horizontal.getValue() / 100.0;
-                double v = vertical.getValue() / 100.0;
+            double h = horizontal.getValue() / 100.0;
+            double v = vertical.getValue() / 100.0;
 
+            if (mode.is("Simple")) {
                 if (h == 0.0 && v == 0.0) {
                     event.cancel();
                 } else {
@@ -94,9 +122,26 @@ public class Velocity extends Module {
                     float motY = (float) (packet.func_149144_d() * v);
                     float motZ = (float) (packet.func_149147_e() * h);
 
-                    MappingResolver.setFieldValue(packet, motX, S27PacketExplosion.class, "field_149152_f");
-                    MappingResolver.setFieldValue(packet, motY, S27PacketExplosion.class, "field_149153_g");
-                    MappingResolver.setFieldValue(packet, motZ, S27PacketExplosion.class, "field_149159_h");
+                    MappingResolver.setFieldValue(packet, motX, S27PacketExplosion.class, "field_149152_f", "motionX");
+                    MappingResolver.setFieldValue(packet, motY, S27PacketExplosion.class, "field_149153_g", "motionY");
+                    MappingResolver.setFieldValue(packet, motZ, S27PacketExplosion.class, "field_149159_h", "motionZ");
+                }
+            } else if (mode.is("Delay")) {
+                float expX = (float) (packet.func_149149_c() * h);
+                float expY = (float) (packet.func_149144_d() * v);
+                float expZ = (float) (packet.func_149147_e() * h);
+
+                MappingResolver.setFieldValue(packet, 0.0F, S27PacketExplosion.class, "field_149152_f", "motionX");
+                MappingResolver.setFieldValue(packet, 0.0F, S27PacketExplosion.class, "field_149153_g", "motionY");
+                MappingResolver.setFieldValue(packet, 0.0F, S27PacketExplosion.class, "field_149159_h", "motionZ");
+
+                if (h != 0.0 || v != 0.0) {
+                    delayedMotionX = expX;
+                    delayedMotionY = expY;
+                    delayedMotionZ = expZ;
+                    pendingIsExplosion = true;
+                    pendingVelocity = true;
+                    delayTicks = 2;
                 }
             }
         }
@@ -104,7 +149,7 @@ public class Velocity extends Module {
 
     @EventTarget
     public void onTick(TickEvent event) {
-        if (!event.isPre() || mc.thePlayer == null) return;
+        if (!event.isPre() || mc.thePlayer == null || mc.theWorld == null) return;
 
         if (mode.is("Jump Reset") || mode.is("Intave")) {
             // Legit jump reset bypass
@@ -114,10 +159,16 @@ public class Velocity extends Module {
         }
 
         if (pendingVelocity && --delayTicks <= 0) {
-            mc.thePlayer.motionX = delayedMotionX;
-            mc.thePlayer.motionY = delayedMotionY;
-            mc.thePlayer.motionZ = delayedMotionZ;
-            pendingVelocity = false;
+            if (pendingIsExplosion) {
+                mc.thePlayer.motionX += delayedMotionX;
+                mc.thePlayer.motionY += delayedMotionY;
+                mc.thePlayer.motionZ += delayedMotionZ;
+            } else {
+                mc.thePlayer.motionX = delayedMotionX;
+                mc.thePlayer.motionY = delayedMotionY;
+                mc.thePlayer.motionZ = delayedMotionZ;
+            }
+            resetPendingState();
         }
     }
 }

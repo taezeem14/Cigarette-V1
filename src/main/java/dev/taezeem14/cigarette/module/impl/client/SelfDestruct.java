@@ -5,6 +5,7 @@ import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
 import dev.taezeem14.cigarette.module.impl.blatant.Timer;
 import dev.taezeem14.cigarette.util.mapping.MappingResolver;
+import dev.taezeem14.cigarette.util.player.CPSTracker;
 
 public class SelfDestruct extends Module {
 
@@ -14,12 +15,12 @@ public class SelfDestruct extends Module {
 
     @Override
     public void onEnable() {
-        if (mc.thePlayer == null) return;
+        // 1. Close active client GUI screens
+        if (mc != null) {
+            mc.displayGuiScreen(null);
+        }
 
-        // 1. Close active screens
-        mc.displayGuiScreen(null);
-
-        // 2. Disable all other modules
+        // 2. Disable all other modules (restores module-managed state such as Fullbright, Timer, keys)
         if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getModuleManager() != null) {
             for (Module module : Cigarette.INSTANCE.getModuleManager().getModules()) {
                 if (module != this && module.isEnabled()) {
@@ -28,27 +29,31 @@ public class SelfDestruct extends Module {
             }
         }
 
-        // 3. Restore all modified Minecraft fields to default
+        // 3. Explicitly restore Fullbright gamma, Timer speed, and Minecraft click fields to vanilla defaults
+        if (mc != null && mc.gameSettings != null && mc.gameSettings.gammaSetting > 10.0F) {
+            mc.gameSettings.gammaSetting = 1.0F;
+        }
         Timer.setTimerSpeed(1.0F);
 
-        try {
-            MappingResolver.setFieldValue(mc, 4, mc.getClass(), MappingResolver.MINECRAFT_RIGHT_CLICK_DELAY_TIMER);
-            MappingResolver.setFieldValue(mc, 0, mc.getClass(), MappingResolver.MINECRAFT_LEFT_CLICK_COUNTER);
-        } catch (Exception ignored) {
+        if (mc != null) {
+            try {
+                MappingResolver.setFieldValue(mc, 4, mc.getClass(), MappingResolver.MINECRAFT_RIGHT_CLICK_DELAY_TIMER);
+                MappingResolver.setFieldValue(mc, 0, mc.getClass(), MappingResolver.MINECRAFT_LEFT_CLICK_COUNTER);
+            } catch (Exception ignored) {
+            }
         }
 
-        // 4. Unregister everything from EventBus
-        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getEventBus() != null) {
-            Cigarette.INSTANCE.getEventBus().unregister(this);
-        }
-
-        // 5. Clear friend and setting caches
+        // 4. Clear runtime caches and disable self
         FriendManager.clearFriends();
-
-        // 6. Disable self
+        CPSTracker.clear();
         this.setState(false);
 
-        // 7. Request immediate garbage collection
+        // 5. Unhook client instance and release references
+        if (Cigarette.INSTANCE != null) {
+            Cigarette.INSTANCE.destruct();
+        }
+
+        // 6. Request immediate garbage collection
         System.gc();
     }
 }

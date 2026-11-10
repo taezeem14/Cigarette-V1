@@ -9,10 +9,10 @@ import dev.taezeem14.cigarette.setting.impl.DoubleSliderSetting;
 import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.math.RandomUtil;
+import dev.taezeem14.cigarette.util.math.RotationUtil;
 import dev.taezeem14.cigarette.util.math.TimerUtil;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.network.play.client.C0BPacketEntityAction;
-import org.lwjgl.input.Keyboard;
 
 public class WTap extends Module {
 
@@ -23,11 +23,26 @@ public class WTap extends Module {
     private final TimerUtil timer = new TimerUtil();
     private boolean awaitingReset = false;
     private int stage = 0;
-    private long currentDelay = 50;
+    private long currentDelay = 50L;
 
     public WTap() {
         super("WTap", "Resets sprint on attack to maximize knockback dealt", Category.COMBAT);
         addSettings(mode, delay, chance);
+    }
+
+    @Override
+    public String getSuffix() {
+        return mode.getMode();
+    }
+
+    @Override
+    public void onDisable() {
+        if (awaitingReset && stage == 1 && mode.is("Legit Key") && mc.gameSettings != null) {
+            int forwardKey = mc.gameSettings.keyBindForward.getKeyCode();
+            KeyBinding.setKeyBindState(forwardKey, RotationUtil.isPhysicalKeyDown(forwardKey));
+        }
+        awaitingReset = false;
+        stage = 0;
     }
 
     @EventTarget
@@ -50,7 +65,9 @@ public class WTap extends Module {
 
         if (stage == 0 && timer.hasTimeElapsed(currentDelay)) {
             if (mode.is("Packet")) {
-                mc.getNetHandler().addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.STOP_SPRINTING));
+                if (mc.getNetHandler() != null) {
+                    mc.getNetHandler().addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.STOP_SPRINTING));
+                }
                 stage = 1;
                 timer.reset();
             } else if (mode.is("Legit Key")) {
@@ -61,10 +78,12 @@ public class WTap extends Module {
             }
         } else if (stage == 1 && timer.hasTimeElapsed(30L)) {
             if (mode.is("Packet")) {
-                mc.getNetHandler().addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.START_SPRINTING));
+                if (mc.getNetHandler() != null) {
+                    mc.getNetHandler().addToSendQueue(new C0BPacketEntityAction(mc.thePlayer, C0BPacketEntityAction.Action.START_SPRINTING));
+                }
             } else if (mode.is("Legit Key")) {
                 int forwardKey = mc.gameSettings.keyBindForward.getKeyCode();
-                KeyBinding.setKeyBindState(forwardKey, Keyboard.isKeyDown(forwardKey));
+                KeyBinding.setKeyBindState(forwardKey, RotationUtil.isPhysicalKeyDown(forwardKey));
             }
             awaitingReset = false;
             stage = 0;

@@ -28,6 +28,7 @@ public class Blink extends Module {
     private final Queue<Packet<?>> packetQueue = new ConcurrentLinkedQueue<>();
     private EntityOtherPlayerMP fakePlayer;
     private final TimerUtil pulseTimer = new TimerUtil();
+    private volatile boolean flushing = false;
 
     public Blink() {
         super("Blink", "Suspends outgoing movement packets to teleport or choke updates", Category.BLATANT);
@@ -35,8 +36,14 @@ public class Blink extends Module {
     }
 
     @Override
+    public String getSuffix() {
+        return String.valueOf(packetQueue.size());
+    }
+
+    @Override
     public void onEnable() {
         packetQueue.clear();
+        flushing = false;
         pulseTimer.reset();
 
         if (mc.thePlayer != null && mc.theWorld != null) {
@@ -57,7 +64,7 @@ public class Blink extends Module {
 
     @EventTarget
     public void onPacket(PacketEvent event) {
-        if (!event.isOutgoing() || mc.thePlayer == null) return;
+        if (flushing || !event.isOutgoing() || mc.thePlayer == null) return;
 
         Packet<?> packet = event.getPacket();
         if (packet instanceof C03PacketPlayer || packet instanceof C0BPacketEntityAction
@@ -76,17 +83,29 @@ public class Blink extends Module {
             flushPackets();
             if (fakePlayer != null && mc.thePlayer != null) {
                 fakePlayer.copyLocationAndAnglesFrom(mc.thePlayer);
+                fakePlayer.rotationYawHead = mc.thePlayer.rotationYawHead;
+                fakePlayer.renderYawOffset = mc.thePlayer.renderYawOffset;
             }
             pulseTimer.reset();
         }
     }
 
     private void flushPackets() {
-        if (mc.getNetHandler() == null) return;
+        if (mc.getNetHandler() == null || mc.getNetHandler().getNetworkManager() == null) {
+            packetQueue.clear();
+            return;
+        }
 
-        while (!packetQueue.isEmpty()) {
-            Packet<?> p = packetQueue.poll();
-            mc.getNetHandler().getNetworkManager().sendPacket(p);
+        flushing = true;
+        try {
+            while (!packetQueue.isEmpty()) {
+                Packet<?> p = packetQueue.poll();
+                if (p != null) {
+                    mc.getNetHandler().getNetworkManager().sendPacket(p);
+                }
+            }
+        } finally {
+            flushing = false;
         }
     }
 

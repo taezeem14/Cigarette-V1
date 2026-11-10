@@ -23,6 +23,11 @@ public class AutoArmor extends Module {
         addSettings(delay, openInvOnly);
     }
 
+    @Override
+    public String getSuffix() {
+        return String.format("%.0f-%.0f", delay.getValueMin(), delay.getValueMax());
+    }
+
     @EventTarget
     public void onTick(TickEvent event) {
         if (!event.isPre() || mc.thePlayer == null) return;

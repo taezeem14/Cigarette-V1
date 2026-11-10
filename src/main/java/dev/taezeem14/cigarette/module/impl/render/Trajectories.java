@@ -75,13 +75,13 @@ public class Trajectories extends Module {
             if (power > 1.0F) {
                 power = 1.0F;
             }
-            velocity = power * 2.0F * 1.5F;
+            velocity = power * 3.0F;
             gravity = 0.05F;
         } else if (isPotion) {
-            velocity = 0.4F * 1.25F;
+            velocity = 0.5F;
             gravity = 0.05F;
         } else {
-            velocity = 0.4F * 1.5F;
+            velocity = 1.5F;
             gravity = 0.03F;
         }
 
@@ -90,11 +90,13 @@ public class Trajectories extends Module {
         float motionZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
 
         float distance = MathHelper.sqrt_float(motionX * motionX + motionY * motionY + motionZ * motionZ);
+        if (distance <= 0.0001F) return;
         motionX = (motionX / distance) * velocity;
         motionY = (motionY / distance) * velocity;
         motionZ = (motionZ / distance) * velocity;
 
         List<Vec3> points = new ArrayList<>();
+        points.add(new Vec3(posX, posY, posZ));
         MovingObjectPosition landingPosition = null;
 
         for (int i = 0; i < 150; i++) {
@@ -108,7 +110,6 @@ public class Trajectories extends Module {
                 break;
             }
 
-            // Entity collision check
             AxisAlignedBB aabb = new AxisAlignedBB(posX, posY, posZ, posX + motionX, posY + motionY, posZ + motionZ).expand(1.0, 1.0, 1.0);
             List<Entity> entities = mc.theWorld.getEntitiesWithinAABBExcludingEntity(mc.thePlayer, aabb);
             for (Entity entity : entities) {
@@ -137,9 +138,10 @@ public class Trajectories extends Module {
             motionY -= gravity;
         }
 
-        // Render trajectory path
+        int pathColor = color.getRGB();
+
         RenderUtil.enableGL3D();
-        RenderUtil.color(color.getRGB());
+        RenderUtil.color(pathColor);
         GL11.glLineWidth(lineWidth.getValueFloat());
 
         GL11.glBegin(GL11.GL_LINE_STRIP);
@@ -147,20 +149,17 @@ public class Trajectories extends Module {
             GL11.glVertex3d(point.xCoord - renderPosX, point.yCoord - renderPosY, point.zCoord - renderPosZ);
         }
         GL11.glEnd();
+        GL11.glLineWidth(1.0F);
+        RenderUtil.disableGL3D();
 
-        // Render landing box
-        if (hitBox.isEnabled() && landingPosition != null) {
+        // Translucent fill + crisp outline on landing box
+        if (hitBox.isEnabled() && landingPosition != null && landingPosition.hitVec != null) {
             Vec3 hit = landingPosition.hitVec;
             AxisAlignedBB bb = new AxisAlignedBB(
                     hit.xCoord - 0.25, hit.yCoord - 0.25, hit.zCoord - 0.25,
                     hit.xCoord + 0.25, hit.yCoord + 0.25, hit.zCoord + 0.25
             );
-            RenderUtil.drawSolidBox(new AxisAlignedBB(
-                    bb.minX - renderPosX, bb.minY - renderPosY, bb.minZ - renderPosZ,
-                    bb.maxX - renderPosX, bb.maxY - renderPosY, bb.maxZ - renderPosZ
-            ));
+            RenderUtil.draw3DBox(bb, pathColor, true, true, lineWidth.getValueFloat());
         }
-
-        RenderUtil.disableGL3D();
     }
 }

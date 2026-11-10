@@ -5,6 +5,7 @@ import dev.taezeem14.cigarette.event.impl.TickEvent;
 import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
+import dev.taezeem14.cigarette.util.math.RotationUtil;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
@@ -22,11 +23,27 @@ public class AutoTool extends Module {
         addSettings(switchBack);
     }
 
+    @Override
+    public String getSuffix() {
+        return switchBack.isEnabled() ? "Switch" : "Stay";
+    }
+
+    @Override
+    public void onDisable() {
+        if (mining && switchBack.isEnabled() && originalSlot != -1 && mc.thePlayer != null) {
+            mc.thePlayer.inventory.currentItem = originalSlot;
+        }
+        originalSlot = -1;
+        mining = false;
+    }
+
     @EventTarget
     public void onTick(TickEvent event) {
         if (!event.isPre() || mc.thePlayer == null || mc.theWorld == null) return;
 
-        if (mc.gameSettings.keyBindAttack.isKeyDown() && mc.objectMouseOver != null
+        int attackKey = mc.gameSettings.keyBindAttack.getKeyCode();
+        if (mc.currentScreen == null && RotationUtil.isPhysicalKeyDown(attackKey)
+                && mc.objectMouseOver != null
                 && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
             BlockPos pos = mc.objectMouseOver.getBlockPos();
             IBlockState state = mc.theWorld.getBlockState(pos);

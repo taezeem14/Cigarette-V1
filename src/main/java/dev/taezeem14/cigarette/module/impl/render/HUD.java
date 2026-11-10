@@ -5,15 +5,17 @@ import dev.taezeem14.cigarette.event.EventTarget;
 import dev.taezeem14.cigarette.event.impl.Render2DEvent;
 import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
+import dev.taezeem14.cigarette.module.impl.client.ArrayListModule;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
-import dev.taezeem14.cigarette.setting.impl.ColorSetting;
-import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.ui.font.FontUtil;
+import dev.taezeem14.cigarette.util.player.CPSTracker;
+import dev.taezeem14.cigarette.util.render.AnimationUtil;
 import dev.taezeem14.cigarette.util.render.ColorUtil;
 import dev.taezeem14.cigarette.util.render.RenderUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -22,10 +24,7 @@ public class HUD extends Module {
 
     private final BooleanSetting watermark = new BooleanSetting("Watermark", true);
     private final BooleanSetting arrayList = new BooleanSetting("ArrayList", true);
-    private final ModeSetting colorMode = new ModeSetting("Color Mode", "Rainbow", "Rainbow", "Astolfo", "Static", "Theme");
-    private final ColorSetting staticColor = new ColorSetting("Static Color", 0xFF3882F6);
     private final BooleanSetting sideBar = new BooleanSetting("Side Bar", true);
-    private final BooleanSetting background = new BooleanSetting("Background", true);
     private final BooleanSetting showCoords = new BooleanSetting("Coordinates", true);
     private final BooleanSetting showFps = new BooleanSetting("FPS Display", true);
     private final BooleanSetting showCps = new BooleanSetting("CPS Display", true);
@@ -37,14 +36,21 @@ public class HUD extends Module {
 
     public HUD() {
         super("HUD", "In-game heads-up display and active modules", Category.RENDER);
-        addSettings(watermark, arrayList, colorMode, staticColor, sideBar, background, showCoords, showFps, showCps);
-        setState(true); // Enabled by default
+        addSettings(watermark, arrayList, sideBar, showCoords, showFps, showCps);
+        setState(true);
     }
 
     @EventTarget
     public void onRender2D(Render2DEvent event) {
         if (mc.gameSettings.showDebugInfo) return;
 
+        FontUtil.ensureInitialized();
+        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getModuleManager() != null) {
+            ClickGUIModule clickGUI = Cigarette.INSTANCE.getModuleManager().getModuleByClass(ClickGUIModule.class);
+            if (clickGUI != null) {
+                clickGUI.syncThemeFromSetting();
+            }
+        }
         ScaledResolution sr = event.getScaledResolution();
         float screenW = sr.getScaledWidth();
         float screenH = sr.getScaledHeight();
@@ -54,117 +60,187 @@ public class HUD extends Module {
             renderWatermark();
         }
 
-        // 2. Active Module ArrayList
-        if (arrayList.isEnabled() && Cigarette.INSTANCE != null && Cigarette.INSTANCE.getModuleManager() != null) {
-            renderArrayList(screenW);
+        // 2. Active Module ArrayList (synchronized with ArrayListModule)
+        ArrayListModule alModule = getArrayListModule();
+        boolean showArrayList = arrayList.isEnabled() && (alModule == null || alModule.isEnabled());
+        if (showArrayList && Cigarette.INSTANCE != null && Cigarette.INSTANCE.getModuleManager() != null) {
+            renderArrayList(screenW, alModule);
         }
 
         // 3. Info / Stats Display (Bottom Left)
         renderInfoOverlay(screenH);
+
+        // 4. Toast Notifications (Bottom Right)
+        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getNotificationManager() != null) {
+            Cigarette.INSTANCE.getNotificationManager().render(screenW, screenH);
+        }
     }
 
     private void renderWatermark() {
-        String clientName = "CIGARETTE";
-        String clientVersion = "V1";
+        String brand = "CIGARETTE";
+        String rest = " \u2022 V1 \u2022 " + Minecraft.getDebugFPS() + " FPS \u2022 "
+                + CPSTracker.getLeftCPS() + " | " + CPSTracker.getRightCPS() + " CPS";
 
-        int nameW = FontUtil.bold.getStringWidth(clientName);
-        int verW = FontUtil.small.getStringWidth(clientVersion);
-        float totalW = nameW + verW + 16.0f;
-        float totalH = 18.0f;
+        int brandW = FontUtil.bold.getStringWidth(brand);
+        int restW = FontUtil.small.getStringWidth(rest);
+        float totalW = brandW + restW + 18.0f;
+        float totalH = 19.0f;
+        int accent = getHUDColor(0);
 
-        if (background.isEnabled()) {
-            RenderUtil.drawDropShadow(watermarkX, watermarkY, totalW, totalH, 3.0f, 0x55000000);
-            RenderUtil.drawRoundedRect(watermarkX, watermarkY, totalW, totalH, 3.0f, ColorUtil.BACKGROUND);
-            RenderUtil.drawRoundedOutline(watermarkX, watermarkY, totalW, totalH, 3.0f, 1.0f, 0xFF222228);
-        }
+        RenderUtil.drawDropShadow(watermarkX, watermarkY, totalW, totalH, 4.0f, 0x55000000);
+        RenderUtil.drawRoundedRect(watermarkX, watermarkY, totalW, totalH, 4.0f, 0xDC141418);
+        RenderUtil.drawRoundedOutline(watermarkX, watermarkY, totalW, totalH, 4.0f, 1.0f, ColorUtil.BORDER);
 
-        int themeColor = getHUDColor(0);
-        FontUtil.bold.drawString(clientName, watermarkX + 5.0f, watermarkY + (totalH - FontUtil.bold.getHeight()) / 2.0f, themeColor);
-        FontUtil.small.drawString(clientVersion, watermarkX + 5.0f + nameW + 3.0f, watermarkY + 4.0f, ColorUtil.TEXT_MUTED);
+        // Top subtle highlight bar + left accent pill
+        RenderUtil.drawRoundedRectTop(watermarkX + 1.0f, watermarkY, totalW - 2.0f, 1.5f, 1.5f, ColorUtil.modifyAlpha(accent, 180));
+        RenderUtil.drawRoundedRect(watermarkX + 4.0f, watermarkY + 4.5f, 2.0f, totalH - 9.0f, 1.0f, accent);
+
+        FontUtil.bold.drawString(brand, watermarkX + 9.0f, watermarkY + (totalH - FontUtil.bold.getHeight()) / 2.0f - 0.5f, accent);
+        FontUtil.small.drawString(rest, watermarkX + 9.0f + brandW, watermarkY + (totalH - FontUtil.small.getHeight()) / 2.0f - 0.5f, ColorUtil.TEXT_PRIMARY);
     }
 
-    private void renderArrayList(float screenW) {
-        List<Module> activeModules = new ArrayList<>();
+    private void renderArrayList(float screenW, ArrayListModule al) {
+        boolean showSuffix = al == null || al.getSuffixSetting().isEnabled();
+        boolean showBackground = al == null || al.getBackground().isEnabled();
+        boolean useAnimation = al == null || al.getAnimation().isEnabled();
+        boolean useCustomFont = al == null || !al.getFont().is("Minecraft");
+
+        List<Module> renderModules = new ArrayList<>();
         for (Module m : Cigarette.INSTANCE.getModuleManager().getModules()) {
-            if (m.isEnabled()) {
-                activeModules.add(m);
+            if (m instanceof ClickGUIModule || m.isHidden()) {
+                continue;
+            }
+            float target = m.isEnabled() ? 1.0f : 0.0f;
+            float anim = useAnimation ? AnimationUtil.lerp(m.getAnimationProgress(), target, 14.0f) : target;
+            m.setAnimationProgress(anim);
+
+            if (anim > 0.02f) {
+                renderModules.add(m);
             }
         }
 
-        activeModules.sort(Comparator.comparingInt((Module m) -> FontUtil.regular.getStringWidth(m.getName())).reversed());
+        renderModules.sort(Comparator.comparingInt((Module m) -> getDisplayWidth(formatModuleDisplay(m, showSuffix), useCustomFont)).reversed());
 
         float startY = arrayListY;
         int count = 0;
 
-        for (Module m : activeModules) {
-            String name = m.getName();
-            int strW = FontUtil.regular.getStringWidth(name);
-            float itemW = strW + 8.0f;
-            float itemH = 13.0f;
+        for (Module m : renderModules) {
+            float anim = Math.max(0.0f, Math.min(1.0f, m.getAnimationProgress()));
+            String display = formatModuleDisplay(m, showSuffix);
+            int strW = getDisplayWidth(display, useCustomFont);
+            float itemW = strW + 10.0f;
+            float itemH = 13.5f;
 
-            float itemX;
+            float baseX;
             if (arrayListX < 0) {
-                itemX = screenW - itemW - (sideBar.isEnabled() ? 4.0f : 2.0f);
+                baseX = screenW - itemW - (sideBar.isEnabled() ? 4.0f : 2.0f);
             } else {
-                itemX = arrayListX;
+                baseX = arrayListX;
             }
 
-            int color = getHUDColor(count * 150);
+            float slideOffset = (1.0f - AnimationUtil.easeOutCubic(anim)) * (itemW + 8.0f);
+            float itemX = arrayListX < 0 ? baseX + slideOffset : baseX - slideOffset;
 
-            if (background.isEnabled()) {
-                RenderUtil.drawRect(itemX, startY, itemW, itemH, 0x88141416);
+            int baseColor = getHUDColor(count * 120);
+            int alpha = Math.max(10, Math.min(255, (int) (255 * anim)));
+            int color = ColorUtil.modifyAlpha(baseColor, alpha);
+
+            if (showBackground) {
+                int bgCol = ColorUtil.modifyAlpha(0xFF141418, (int) (185 * anim));
+                RenderUtil.drawRoundedRect(itemX, startY, itemW, itemH - 0.5f, 2.0f, bgCol);
             }
 
-            FontUtil.regular.drawString(name, itemX + 4.0f, startY + (itemH - FontUtil.regular.getHeight()) / 2.0f, color);
+            if (useCustomFont) {
+                FontUtil.regular.drawStringWithShadow(display, itemX + 5.0f, startY + (itemH - FontUtil.regular.getHeight()) / 2.0f - 0.5f, color);
+            } else {
+                mc.fontRendererObj.drawStringWithShadow(display, itemX + 5.0f, startY + (itemH - mc.fontRendererObj.FONT_HEIGHT) / 2.0f, color);
+            }
 
             if (sideBar.isEnabled()) {
-                RenderUtil.drawRect(itemX + itemW, startY, 2.0f, itemH, color);
+                float barX = itemX + itemW + 0.5f;
+                RenderUtil.drawRect(barX - 0.5f, startY, 3.0f, itemH - 0.5f, ColorUtil.modifyAlpha(baseColor, (int) (60 * anim)));
+                RenderUtil.drawRoundedRect(barX, startY + 0.5f, 2.0f, itemH - 1.5f, 1.0f, color);
             }
 
-            startY += itemH;
+            startY += itemH * anim;
             count++;
         }
     }
 
+    private String formatModuleDisplay(Module m, boolean showSuffix) {
+        if (!showSuffix) {
+            return m.getName();
+        }
+        String suffix = m.getSuffix();
+        if (suffix != null && !suffix.trim().isEmpty()) {
+            return m.getName() + " \u00a77" + suffix.trim();
+        }
+        return m.getName();
+    }
+
+    private int getDisplayWidth(String text, boolean useCustomFont) {
+        if (useCustomFont) {
+            return FontUtil.regular.getStringWidth(text);
+        }
+        return mc.fontRendererObj.getStringWidth(text);
+    }
+
     private void renderInfoOverlay(float screenH) {
-        float infoY = screenH - 12.0f;
+        float infoY = screenH - 13.0f;
 
         if (showCoords.isEnabled() && mc.thePlayer != null) {
-            String coords = String.format("XYZ: %.1f, %.1f, %.1f", mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ);
-            FontUtil.small.drawStringWithShadow(coords, 4.0f, infoY, ColorUtil.TEXT_PRIMARY);
+            String coords = String.format("\u00a77XYZ \u00a7f%.1f, %.1f, %.1f", mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ);
+            FontUtil.small.drawStringWithShadow(coords, 6.0f, infoY, ColorUtil.TEXT_PRIMARY);
             infoY -= 11.0f;
         }
 
         if (showFps.isEnabled()) {
-            String fps = "FPS: " + Minecraft.getDebugFPS();
-            FontUtil.small.drawStringWithShadow(fps, 4.0f, infoY, ColorUtil.TEXT_PRIMARY);
+            String fps = "\u00a77FPS \u00a7f" + Minecraft.getDebugFPS();
+            FontUtil.small.drawStringWithShadow(fps, 6.0f, infoY, ColorUtil.TEXT_PRIMARY);
             infoY -= 11.0f;
         }
 
         if (showCps.isEnabled()) {
-            int cps = getEstimatedCPS();
-            String cpsStr = "CPS: " + cps;
-            FontUtil.small.drawStringWithShadow(cpsStr, 4.0f, infoY, ColorUtil.TEXT_PRIMARY);
+            String cpsStr = "\u00a77CPS \u00a7f" + CPSTracker.getLeftCPS() + " \u00a77| \u00a7f" + CPSTracker.getRightCPS();
+            FontUtil.small.drawStringWithShadow(cpsStr, 6.0f, infoY, ColorUtil.TEXT_PRIMARY);
         }
-    }
-
-    private int getEstimatedCPS() {
-        return org.lwjgl.input.Mouse.isButtonDown(0) ? 12 : 0;
     }
 
     public int getHUDColor(int offset) {
-        String mode = colorMode.getMode();
+        ArrayListModule al = getArrayListModule();
+        if (al == null) {
+            return ColorUtil.getAccent();
+        }
+
+        String mode = al.getColorMode().getMode();
+        float speed = Math.max(0.2f, al.getRainbowSpeed().getValueFloat());
+        long cycleMs = (long) (4000.0f / speed);
+
         switch (mode.toLowerCase()) {
-            case "rainbow":
-                return ColorUtil.getRainbow(4, offset);
-            case "astolfo":
-                return ColorUtil.getAstolfo(4, offset);
+            case "rainbow": {
+                float hue = ((System.currentTimeMillis() + offset) % cycleMs) / (float) cycleMs;
+                return Color.HSBtoRGB(hue, 0.78f, 1.0f);
+            }
+            case "astolfo": {
+                float hue = ((System.currentTimeMillis() + offset) % cycleMs) / (float) cycleMs;
+                hue = hue > 0.5f ? 1.0f - hue : hue;
+                hue += 0.5f;
+                return Color.HSBtoRGB(hue, 0.6f, 1.0f);
+            }
             case "static":
-                return staticColor.getRGB();
+                return al.getStaticColor().getRGB();
             case "theme":
             default:
-                return ColorUtil.ACCENT;
+                return ColorUtil.getAccent();
         }
+    }
+
+    private ArrayListModule getArrayListModule() {
+        ArrayListModule al = ArrayListModule.getInstance();
+        if (al == null && Cigarette.INSTANCE != null && Cigarette.INSTANCE.getModuleManager() != null) {
+            al = Cigarette.INSTANCE.getModuleManager().getModuleByClass(ArrayListModule.class);
+        }
+        return al;
     }
 
     public float getWatermarkX() {

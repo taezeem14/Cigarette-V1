@@ -2,8 +2,12 @@ package dev.taezeem14.cigarette.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.taezeem14.cigarette.Cigarette;
+import dev.taezeem14.cigarette.module.Module;
+import dev.taezeem14.cigarette.module.impl.render.HUD;
 import net.minecraft.client.Minecraft;
 
 import java.io.*;
@@ -37,13 +41,28 @@ public class ConfigManager {
 
         File defaultFile = new File(profilesDir, "default.json");
         if (defaultFile.exists()) {
-            load("default");
+            if (!load("default")) {
+                ensureDefaultHudEnabled();
+            }
         } else {
+            ensureDefaultHudEnabled();
             save("default");
         }
     }
 
+    private void ensureDefaultHudEnabled() {
+        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getModuleManager() != null) {
+            Module hud = Cigarette.INSTANCE.getModuleManager().getModuleByClass(HUD.class);
+            if (hud != null && !hud.isEnabled()) {
+                hud.setState(true);
+            }
+        }
+    }
+
     public boolean save(String profileName) {
+        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.isDestructed()) {
+            return false;
+        }
         if (profileName == null || profileName.trim().isEmpty()) {
             profileName = "default";
         }
@@ -66,6 +85,9 @@ public class ConfigManager {
     }
 
     public boolean load(String profileName) {
+        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.isDestructed()) {
+            return false;
+        }
         if (profileName == null || profileName.trim().isEmpty()) {
             profileName = "default";
         }
@@ -74,7 +96,11 @@ public class ConfigManager {
             return false;
         }
         try (InputStreamReader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
-            JsonObject json = new JsonParser().parse(reader).getAsJsonObject();
+            JsonElement parsed = new JsonParser().parse(reader);
+            if (parsed == null || !parsed.isJsonObject()) {
+                return false;
+            }
+            JsonObject json = parsed.getAsJsonObject();
             Profile profile = new Profile(profileName);
             profile.fromJson(json);
             this.activeProfile = profile;
@@ -86,6 +112,9 @@ public class ConfigManager {
     }
 
     public boolean delete(String profileName) {
+        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.isDestructed()) {
+            return false;
+        }
         if (profileName == null || profileName.equalsIgnoreCase("default")) {
             return false;
         }

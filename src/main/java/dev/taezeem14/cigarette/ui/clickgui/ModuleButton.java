@@ -5,6 +5,7 @@ import dev.taezeem14.cigarette.setting.Setting;
 import dev.taezeem14.cigarette.setting.impl.*;
 import dev.taezeem14.cigarette.ui.clickgui.component.*;
 import dev.taezeem14.cigarette.ui.font.FontUtil;
+import dev.taezeem14.cigarette.util.render.AnimationUtil;
 import dev.taezeem14.cigarette.util.render.ColorUtil;
 import dev.taezeem14.cigarette.util.render.RenderUtil;
 import org.lwjgl.input.Keyboard;
@@ -26,6 +27,7 @@ public class ModuleButton {
     private boolean binding = false;
     private float toggleAnimation = 0.0f;
     private float expandAnimation = 0.0f;
+    private float hoverAnimation = 0.0f;
 
     public ModuleButton(Module module, float x, float y, float width) {
         this.module = module;
@@ -34,105 +36,128 @@ public class ModuleButton {
         this.width = width;
         this.toggleAnimation = module.isEnabled() ? 1.0f : 0.0f;
 
-        // Initialize components for all module settings
         for (Setting<?> setting : module.getSettings()) {
             if (setting instanceof BooleanSetting) {
-                components.add(new CheckboxComponent((BooleanSetting) setting, x, 0, width, 14.0f));
+                components.add(new CheckboxComponent((BooleanSetting) setting, x, 0, width, 15.0f));
             } else if (setting instanceof NumberSetting) {
-                components.add(new SliderComponent((NumberSetting) setting, x, 0, width, 16.0f));
+                components.add(new SliderComponent((NumberSetting) setting, x, 0, width, 17.0f));
             } else if (setting instanceof DoubleSliderSetting) {
-                components.add(new DoubleSliderComponent((DoubleSliderSetting) setting, x, 0, width, 16.0f));
+                components.add(new DoubleSliderComponent((DoubleSliderSetting) setting, x, 0, width, 17.0f));
             } else if (setting instanceof ModeSetting) {
-                components.add(new ModeComponent((ModeSetting) setting, x, 0, width, 15.0f));
+                components.add(new ModeComponent((ModeSetting) setting, x, 0, width, 16.0f));
             } else if (setting instanceof ColorSetting) {
                 components.add(new ColorPickerComponent((ColorSetting) setting, x, 0, width, 14.0f));
             } else if (setting instanceof KeybindSetting) {
-                components.add(new KeybindComponent((KeybindSetting) setting, x, 0, width, 14.0f));
+                components.add(new KeybindComponent((KeybindSetting) setting, x, 0, width, 15.0f));
             }
         }
     }
 
     public void render(float mouseX, float mouseY, float partialTicks) {
-        // Smooth toggle animation
-        float targetToggle = module.isEnabled() ? 1.0f : 0.0f;
-        toggleAnimation += (targetToggle - toggleAnimation) * 0.2f;
+        render(mouseX, mouseY, partialTicks, 1.0f);
+    }
 
-        // Smooth expand animation
+    public void render(float mouseX, float mouseY, float partialTicks, float guiScale) {
+        float targetToggle = module.isEnabled() ? 1.0f : 0.0f;
+        toggleAnimation = AnimationUtil.lerp(toggleAnimation, targetToggle, 14.0f);
+
         float targetExpand = expanded ? 1.0f : 0.0f;
-        expandAnimation += (targetExpand - expandAnimation) * 0.2f;
+        expandAnimation = AnimationUtil.lerp(expandAnimation, targetExpand, 15.0f);
 
         boolean hovered = isHovered(mouseX, mouseY);
+        hoverAnimation = AnimationUtil.lerp(hoverAnimation, hovered ? 1.0f : 0.0f, 16.0f);
 
-        // Background color calculation
-        int baseBg = 0xFF17171A;
-        int activeBg = ColorUtil.modifyAlpha(ColorUtil.ACCENT, 200);
-        int currentBg = ColorUtil.interpolateColor(baseBg, activeBg, toggleAnimation);
+        int accent = ColorUtil.getAccent();
+        int baseBg = 0xFF17171B;
+        int activeBg = ColorUtil.interpolateColor(baseBg, ColorUtil.modifyAlpha(accent, 42), toggleAnimation);
+        int currentBg = ColorUtil.interpolateColor(activeBg, 0xFF23232B, hoverAnimation * 0.6f);
 
-        if (hovered) {
-            currentBg = ColorUtil.interpolateColor(currentBg, 0xFF2A2A32, 0.3f);
+        RenderUtil.drawRoundedRect(x, y, width, height, 3.0f, currentBg);
+        if (toggleAnimation > 0.05f) {
+            RenderUtil.drawRoundedOutline(x, y, width, height, 3.0f, 1.0f,
+                    ColorUtil.modifyAlpha(accent, (int) (90 * toggleAnimation)));
         }
 
-        RenderUtil.drawRoundedRect(x, y, width, height, 2.5f, currentBg);
+        // Left glowing 2px vertical accent pill on enabled modules
+        if (toggleAnimation > 0.02f) {
+            float pillH = (height - 6.0f) * AnimationUtil.easeOutCubic(toggleAnimation);
+            float pillY = y + (height - pillH) / 2.0f;
+            RenderUtil.drawRoundedRect(x + 2.0f, pillY - 0.5f, 3.0f, pillH + 1.0f, 1.5f,
+                    ColorUtil.modifyAlpha(accent, (int) (75 * toggleAnimation)));
+            RenderUtil.drawRoundedRect(x + 2.5f, pillY, 2.0f, pillH, 1.0f,
+                    ColorUtil.modifyAlpha(accent, (int) (255 * toggleAnimation)));
+        }
 
-        // Module Name
-        int textColor = ColorUtil.interpolateColor(ColorUtil.TEXT_MUTED, ColorUtil.TEXT_PRIMARY, Math.max(toggleAnimation, hovered ? 0.7f : 0.0f));
-        FontUtil.regular.drawString(module.getName(), x + 6.0f, y + (height - FontUtil.regular.getHeight()) / 2.0f, textColor);
+        // Module Name (bright & bold when enabled)
+        float textX = x + 6.5f + (toggleAnimation * 2.0f);
+        int textColor = ColorUtil.interpolateColor(ColorUtil.TEXT_MUTED, ColorUtil.TEXT_PRIMARY,
+                Math.max(toggleAnimation, hoverAnimation * 0.85f));
+        if (toggleAnimation > 0.5f) {
+            FontUtil.bold.drawString(module.getName(), textX, y + (height - FontUtil.bold.getHeight()) / 2.0f, textColor);
+        } else {
+            FontUtil.regular.drawString(module.getName(), textX, y + (height - FontUtil.regular.getHeight()) / 2.0f, textColor);
+        }
 
         // Binding state or Keybind indicator
+        float rightOffset = components.isEmpty() ? 5.0f : 14.0f;
         if (binding) {
-            String bindText = "[ ... ]";
-            FontUtil.small.drawString(bindText, x + width - FontUtil.small.getStringWidth(bindText) - 16.0f, y + (height - FontUtil.small.getHeight()) / 2.0f, ColorUtil.EMBER_ORANGE);
-        } else if (module.getKeyCode() != Keyboard.KEY_NONE) {
-            String keyName = "[" + Keyboard.getKeyName(module.getKeyCode()) + "]";
-            FontUtil.small.drawString(keyName, x + width - FontUtil.small.getStringWidth(keyName) - 16.0f, y + (height - FontUtil.small.getHeight()) / 2.0f, 0x88FFFFFF);
+            String bindText = "...";
+            FontUtil.small.drawString(bindText, x + width - FontUtil.small.getStringWidth(bindText) - rightOffset,
+                    y + (height - FontUtil.small.getHeight()) / 2.0f, ColorUtil.EMBER_ORANGE);
+        } else if (module.getKeyCode() > Keyboard.KEY_NONE && module.getKeyCode() < 256) {
+            String keyName = Keyboard.getKeyName(module.getKeyCode());
+            if (keyName != null && !keyName.isEmpty()) {
+                String tag = "[" + keyName + "]";
+                FontUtil.small.drawString(tag, x + width - FontUtil.small.getStringWidth(tag) - rightOffset,
+                        y + (height - FontUtil.small.getHeight()) / 2.0f, 0x77EBEBEF);
+            }
         }
 
-        // Expand chevron / indicator
+        // Expand chevron indicator
         if (!components.isEmpty()) {
             String arrow = expanded ? "v" : ">";
-            FontUtil.small.drawString(arrow, x + width - 10.0f, y + (height - FontUtil.small.getHeight()) / 2.0f, 0x99EBEBEF);
+            FontUtil.small.drawString(arrow, x + width - 9.0f,
+                    y + (height - FontUtil.small.getHeight()) / 2.0f,
+                    expanded ? accent : 0x99EBEBEF);
         }
 
-        // Draw expanded setting drawer
+        // Expanded settings drawer with scale-aware nested scissor clipping
         float totalDrawerHeight = getDrawerHeight();
-        if (expandAnimation > 0.01f && totalDrawerHeight > 0) {
-            float visibleDrawerHeight = totalDrawerHeight * expandAnimation;
-            float drawerY = y + height;
+        if (expandAnimation > 0.01f && totalDrawerHeight > 0.0f) {
+            float visibleDrawerHeight = totalDrawerHeight * AnimationUtil.easeOutCubic(expandAnimation);
+            float drawerY = y + height + 1.0f;
 
-            RenderUtil.startScissor(x, drawerY, width, visibleDrawerHeight);
+            RenderUtil.pushScissor(x, drawerY, width, visibleDrawerHeight, guiScale);
+            try {
+                RenderUtil.drawRoundedRect(x + 1.0f, drawerY, width - 2.0f, totalDrawerHeight, 2.5f, 0xFF131317);
+                RenderUtil.drawRoundedOutline(x + 1.0f, drawerY, width - 2.0f, totalDrawerHeight, 2.5f, 1.0f, ColorUtil.BORDER);
 
-            // Drawer background
-            RenderUtil.drawRoundedRect(x + 2.0f, drawerY, width - 4.0f, totalDrawerHeight, 2.0f, 0xFF141417);
-            RenderUtil.drawRoundedOutline(x + 2.0f, drawerY, width - 4.0f, totalDrawerHeight, 2.0f, 1.0f, 0xFF222228);
+                float compY = drawerY + 2.0f;
+                for (Component component : components) {
+                    if (!component.isVisible()) continue;
 
-            float compY = drawerY + 2.0f;
-            for (Component component : components) {
-                if (!component.isVisible()) continue;
+                    component.setX(x + 3.0f);
+                    component.setY(compY);
+                    component.setWidth(width - 6.0f);
+                    component.render(mouseX, mouseY, partialTicks);
 
-                component.setX(x + 4.0f);
-                component.setY(compY);
-                component.setWidth(width - 8.0f);
-                component.render(mouseX, mouseY, partialTicks);
-
-                compY += component.getHeight();
+                    compY += component.getHeight();
+                }
+            } finally {
+                RenderUtil.popScissor();
             }
-
-            RenderUtil.stopScissor();
         }
     }
 
     public void mouseClicked(float mouseX, float mouseY, int mouseButton) {
         if (isHovered(mouseX, mouseY)) {
             if (mouseButton == 0) {
-                // Left click toggles module
                 module.toggle();
             } else if (mouseButton == 1) {
-                // Right click expands drawer
                 if (!components.isEmpty()) {
                     expanded = !expanded;
                 }
             } else if (mouseButton == 2) {
-                // Middle click binds key
                 binding = !binding;
             }
             return;
@@ -159,7 +184,7 @@ public class ModuleButton {
 
     public void keyTyped(char typedChar, int keyCode) {
         if (binding) {
-            if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_DELETE) {
+            if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_DELETE || keyCode == Keyboard.KEY_BACK) {
                 module.setKeyCode(Keyboard.KEY_NONE);
             } else {
                 module.setKeyCode(keyCode);
@@ -180,7 +205,7 @@ public class ModuleButton {
     public float getTotalHeight() {
         float total = height;
         if (expandAnimation > 0.01f) {
-            total += getDrawerHeight() * expandAnimation + 2.0f;
+            total += getDrawerHeight() * AnimationUtil.easeOutCubic(expandAnimation) + 2.0f;
         }
         return total;
     }
@@ -197,6 +222,10 @@ public class ModuleButton {
 
     public boolean isHovered(float mouseX, float mouseY) {
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+    }
+
+    public boolean isExpanded() {
+        return expanded;
     }
 
     public Module getModule() {

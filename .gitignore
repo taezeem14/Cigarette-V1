@@ -1,5 +1,7 @@
 .references/
 build/
 .gradle/
+run/
 *.class
 *.jar
+!gradle/wrapper/gradle-wrapper.jar

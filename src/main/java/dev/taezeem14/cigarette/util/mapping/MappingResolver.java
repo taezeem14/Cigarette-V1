@@ -11,11 +11,25 @@ public final class MappingResolver {
 
     private static final Map<String, Field> FIELD_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, Method> METHOD_CACHE = new ConcurrentHashMap<>();
+    private static final Field MODIFIERS_FIELD;
+
+    static {
+        Field modField = null;
+        try {
+            modField = Field.class.getDeclaredField("modifiers");
+            modField.setAccessible(true);
+        } catch (Exception ignored) {
+        }
+        MODIFIERS_FIELD = modField;
+    }
 
     private MappingResolver() {
     }
 
-    public static Field getField(Class<?> clazz, String... names) {
+    private static Field findField(Class<?> clazz, String... names) {
+        if (clazz == null || names == null || names.length == 0) {
+            return null;
+        }
         String cacheKey = clazz.getName() + "#" + Arrays.toString(names);
         Field cached = FIELD_CACHE.get(cacheKey);
         if (cached != null) {
@@ -35,27 +49,39 @@ public final class MappingResolver {
             }
             current = current.getSuperclass();
         }
+        return null;
+    }
 
-        throw new RuntimeException("Could not resolve field from names: " + Arrays.toString(names) + " on class " + clazz.getName());
+    public static Field getField(Class<?> clazz, String... names) {
+        Field field = findField(clazz, names);
+        if (field == null) {
+            throw new RuntimeException("Could not resolve field from names: " + Arrays.toString(names) + " on class " + (clazz != null ? clazz.getName() : "null"));
+        }
+        return field;
     }
 
     @SuppressWarnings("unchecked")
     public static <T> T getFieldValue(Object instance, Class<?> clazz, String... names) {
         try {
-            Field field = getField(clazz, names);
+            Field field = findField(clazz, names);
+            if (field == null) {
+                return null;
+            }
             return (T) field.get(instance);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ignored) {
             return null;
         }
     }
 
     public static void setFieldValue(Object instance, Object value, Class<?> clazz, String... names) {
         try {
-            Field field = getField(clazz, names);
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            Field field = findField(clazz, names);
+            if (field == null) {
+                return;
+            }
+            if (Modifier.isFinal(field.getModifiers()) && MODIFIERS_FIELD != null) {
+                MODIFIERS_FIELD.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            }
             field.set(instance, value);
         } catch (Exception e) {
             e.printStackTrace();
@@ -106,7 +132,7 @@ public final class MappingResolver {
     public static final String[] KEYBINDING_PRESS_TIME = {"pressTime", "field_151474_i"};
     public static final String[] ENTITYPLAYER_ITEM_IN_USE_COUNT = {"itemInUseCount", "field_71072_f"};
     public static final String[] PLAYERCONTROLLERMP_CUR_BLOCK_DAMAGE = {"curBlockDamageMP", "field_78770_f"};
-    public static final String[] PLAYERCONTROLLERMP_BLOCK_HIT_DELAY = {"blockHitDelay", "field_78778_j"};
+    public static final String[] PLAYERCONTROLLERMP_BLOCK_HIT_DELAY = {"blockHitDelay", "field_78781_i"};
     public static final String[] MINECRAFT_CLICK_MOUSE = {"clickMouse", "func_147116_af"};
     public static final String[] MINECRAFT_RIGHT_CLICK_MOUSE = {"rightClickMouse", "func_147121_ag"};
 }

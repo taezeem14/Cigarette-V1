@@ -1,20 +1,24 @@
 package dev.taezeem14.cigarette.module.impl.render;
 
+import dev.taezeem14.cigarette.Cigarette;
 import dev.taezeem14.cigarette.event.EventTarget;
 import dev.taezeem14.cigarette.event.impl.AttackEvent;
 import dev.taezeem14.cigarette.event.impl.Render2DEvent;
 import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
+import dev.taezeem14.cigarette.module.impl.blatant.KillAura;
+import dev.taezeem14.cigarette.module.impl.utility.AntiBot;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
 import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.ui.font.FontUtil;
+import dev.taezeem14.cigarette.util.render.AnimationUtil;
 import dev.taezeem14.cigarette.util.render.ColorUtil;
 import dev.taezeem14.cigarette.util.render.RenderUtil;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -25,6 +29,7 @@ import java.text.DecimalFormat;
 public class TargetHUD extends Module {
 
     private static final DecimalFormat HP_FORMAT = new DecimalFormat("0.#");
+    private static final DecimalFormat DIST_FORMAT = new DecimalFormat("0.0");
 
     private final BooleanSetting smoothAnimation = new BooleanSetting("Smooth Animation", true);
     private final BooleanSetting showArmor = new BooleanSetting("Show Armor", true);
@@ -32,12 +37,15 @@ public class TargetHUD extends Module {
 
     private float x = 200.0f;
     private float y = 200.0f;
-    private final float width = 150.0f;
-    private final float height = 45.0f;
+    private final float width = 166.0f;
+    private final float height = 52.0f;
 
     private EntityLivingBase currentTarget;
+    private EntityLivingBase lastRenderedTarget;
     private long lastTargetTime = 0L;
     private float animatedHealth = 20.0f;
+    private float damageTrailHealth = 20.0f;
+    private float openAnimation = 0.0f;
 
     public TargetHUD() {
         super("TargetHUD", "Displays targeted player's avatar, health, and status", Category.RENDER);
@@ -47,8 +55,11 @@ public class TargetHUD extends Module {
     @EventTarget
     public void onAttack(AttackEvent event) {
         if (event.getTarget() instanceof EntityLivingBase) {
-            currentTarget = (EntityLivingBase) event.getTarget();
-            lastTargetTime = System.currentTimeMillis();
+            EntityLivingBase candidate = (EntityLivingBase) event.getTarget();
+            if (!AntiBot.isBot(candidate) && candidate.getEntityId() != -1337) {
+                currentTarget = candidate;
+                lastTargetTime = System.currentTimeMillis();
+            }
         }
     }
 
@@ -56,104 +67,202 @@ public class TargetHUD extends Module {
     public void onRender2D(Render2DEvent event) {
         if (mc.theWorld == null || mc.thePlayer == null) return;
 
+        FontUtil.ensureInitialized();
         EntityLivingBase target = getActiveTarget();
-        if (target == null) return;
 
-        float maxHp = target.getMaxHealth();
-        float hp = Math.max(0.0f, Math.min(maxHp, target.getHealth()));
+        if (target != null) {
+            if (lastRenderedTarget != target) {
+                float initialHp = Math.max(0.0f, Math.min(target.getMaxHealth(), target.getHealth()));
+                animatedHealth = initialHp;
+                damageTrailHealth = initialHp;
+                lastRenderedTarget = target;
+            }
+            openAnimation = smoothAnimation.isEnabled() ? AnimationUtil.lerp(openAnimation, 1.0f, 15.0f) : 1.0f;
+        } else {
+            openAnimation = smoothAnimation.isEnabled() ? AnimationUtil.lerp(openAnimation, 0.0f, 15.0f) : 0.0f;
+        }
+
+        if (openAnimation <= 0.01f || lastRenderedTarget == null) {
+            if (target == null) {
+                lastRenderedTarget = null;
+            }
+            return;
+        }
+
+        EntityLivingBase renderTarget = lastRenderedTarget;
+        float maxHp = Math.max(1.0f, renderTarget.getMaxHealth());
+        float hp = Math.max(0.0f, Math.min(maxHp, renderTarget.getHealth()));
 
         if (smoothAnimation.isEnabled()) {
-            animatedHealth += (hp - animatedHealth) * 0.2f;
+            animatedHealth = AnimationUtil.lerp(animatedHealth, hp, 14.0f);
+            if (hp > damageTrailHealth) {
+                damageTrailHealth = AnimationUtil.lerp(damageTrailHealth, hp, 14.0f);
+            } else {
+                damageTrailHealth = AnimationUtil.lerp(damageTrailHealth, hp, 3.2f);
+            }
         } else {
             animatedHealth = hp;
+            damageTrailHealth = hp;
         }
 
-        // Background & Shadow
-        RenderUtil.drawDropShadow(x, y, width, height, 4.0f, 0x66000000);
-        RenderUtil.drawRoundedRect(x, y, width, height, 4.0f, ColorUtil.BACKGROUND);
-        RenderUtil.drawRoundedOutline(x, y, width, height, 4.0f, 1.0f, 0xFF25252C);
+        float scale = smoothAnimation.isEnabled() ? (0.85f + 0.15f * AnimationUtil.easeOutCubic(openAnimation)) : 1.0f;
+        float cx = x + width / 2.0f;
+        float cy = y + height / 2.0f;
 
-        // Player Avatar
-        float avatarSize = 32.0f;
-        float avatarX = x + 6.0f;
-        float avatarY = y + (height - avatarSize) / 2.0f;
+        GlStateManager.pushMatrix();
+        try {
+            GlStateManager.translate(cx, cy, 0.0f);
+            GlStateManager.scale(scale, scale, 1.0f);
+            GlStateManager.translate(-cx, -cy, 0.0f);
 
-        if (target instanceof EntityPlayer) {
-            renderPlayerHead((EntityPlayer) target, avatarX, avatarY, avatarSize);
-        } else {
-            RenderUtil.drawRoundedRect(avatarX, avatarY, avatarSize, avatarSize, 3.0f, 0xFF222228);
-        }
+            // Background & Shadow
+            RenderUtil.drawDropShadow(x, y, width, height, 5.0f, 0x66000000);
+            RenderUtil.drawRoundedRect(x, y, width, height, 5.0f, 0xEE141418);
+            RenderUtil.drawRoundedOutline(x, y, width, height, 5.0f, 1.0f, ColorUtil.BORDER);
 
-        // Target Name
-        float textX = avatarX + avatarSize + 8.0f;
-        float nameY = y + 6.0f;
-        FontUtil.bold.drawString(target.getName(), textX, nameY, ColorUtil.TEXT_PRIMARY);
+            // Player Avatar with hurt-time red flash
+            float avatarSize = 36.0f;
+            float avatarX = x + 7.0f;
+            float avatarY = y + (height - avatarSize) / 2.0f;
 
-        // Health text & percentage
-        float hpPercent = (hp / maxHp) * 100.0f;
-        String hpStr = HP_FORMAT.format(hp) + " HP §7(" + (int) hpPercent + "%)";
-        FontUtil.small.drawString(hpStr, textX, nameY + 11.0f, ColorUtil.TEXT_MUTED);
+            if (renderTarget instanceof EntityPlayer) {
+                renderPlayerHead((EntityPlayer) renderTarget, avatarX, avatarY, avatarSize);
+            } else {
+                RenderUtil.drawRoundedRect(avatarX, avatarY, avatarSize, avatarSize, 3.0f, 0xFF222228);
+            }
 
-        // Health Bar
-        float barX = textX;
-        float barY = nameY + 22.0f;
-        float barW = width - (textX - x) - 8.0f;
-        float barH = 5.0f;
+            float textX = avatarX + avatarSize + 8.0f;
+            float rightPad = x + width - 7.0f;
+            float nameY = y + 7.0f;
 
-        RenderUtil.drawRoundedRect(barX, barY, barW, barH, 2.0f, 0xFF222228);
+            // Win / Lose badge comparing effective health
+            float myEffectiveHp = mc.thePlayer.getHealth() + mc.thePlayer.getAbsorptionAmount();
+            float targetEffectiveHp = renderTarget.getHealth() + renderTarget.getAbsorptionAmount();
+            String badgeText;
+            int badgeColor;
+            if (myEffectiveHp > targetEffectiveHp + 0.5f) {
+                badgeText = "Winning";
+                badgeColor = 0xFF10B981;
+            } else if (targetEffectiveHp > myEffectiveHp + 0.5f) {
+                badgeText = "Losing";
+                badgeColor = 0xFFEF4444;
+            } else {
+                badgeText = "Tied";
+                badgeColor = 0xFFF59E0B;
+            }
 
-        float fillRatio = Math.max(0.0f, Math.min(1.0f, animatedHealth / maxHp));
-        float fillW = barW * fillRatio;
+            float badgeW = FontUtil.small.getStringWidth(badgeText) + 8.0f;
+            float badgeH = 11.0f;
+            float badgeX = rightPad - badgeW;
+            float badgeY = nameY - 1.0f;
+            RenderUtil.drawRoundedRect(badgeX, badgeY, badgeW, badgeH, 2.5f, ColorUtil.modifyAlpha(badgeColor, 45));
+            RenderUtil.drawRoundedOutline(badgeX, badgeY, badgeW, badgeH, 2.5f, 1.0f, ColorUtil.modifyAlpha(badgeColor, 170));
+            FontUtil.small.drawCenteredString(badgeText, badgeX + badgeW / 2.0f, badgeY + (badgeH - FontUtil.small.getHeight()) / 2.0f - 0.5f, badgeColor);
 
-        if (fillW > 1.0f) {
-            int barColor = getBarColor(target);
-            RenderUtil.drawRoundedRect(barX, barY, fillW, barH, 2.0f, barColor);
-        }
+            // Target Name (clamped before badge)
+            String displayName = trimName(renderTarget.getName(), badgeX - textX - 4.0f);
+            FontUtil.bold.drawString(displayName, textX, nameY, ColorUtil.TEXT_PRIMARY);
 
-        // Render Armor
-        if (showArmor.isEnabled() && target instanceof EntityPlayer) {
-            renderTargetArmor((EntityPlayer) target, x + width - 58.0f, y + 4.0f);
+            // Health, absorption, and distance indicator
+            float hpPercent = Math.max(0.0f, Math.min(100.0f, (hp / maxHp) * 100.0f));
+            float dist = mc.thePlayer.getDistanceToEntity(renderTarget);
+            String statsStr = HP_FORMAT.format(hp) + " HP \u00a77(" + (int) hpPercent + "%) \u2022 " + DIST_FORMAT.format(dist) + "m";
+            FontUtil.small.drawString(statsStr, textX, nameY + 11.5f, ColorUtil.TEXT_MUTED);
+
+            // Armor icons (cleanly placed above health bar on right if enabled)
+            if (showArmor.isEnabled() && renderTarget instanceof EntityPlayer) {
+                renderTargetArmor((EntityPlayer) renderTarget, textX, y + height - 22.5f);
+            }
+
+            // Health Bar with Delayed Damage-Trail Bar
+            float barX = textX;
+            float barY = y + height - 10.0f;
+            float barW = rightPad - barX;
+            float barH = 4.5f;
+
+            RenderUtil.drawRoundedRect(barX, barY, barW, barH, 2.0f, 0xFF202028);
+
+            float trailRatio = Math.max(0.0f, Math.min(1.0f, damageTrailHealth / maxHp));
+            float trailW = barW * trailRatio;
+            if (trailW > 1.0f) {
+                RenderUtil.drawRoundedRect(barX, barY, trailW, barH, 2.0f, 0xFFFFA726);
+            }
+
+            float fillRatio = Math.max(0.0f, Math.min(1.0f, animatedHealth / maxHp));
+            float fillW = barW * fillRatio;
+            if (fillW > 1.0f) {
+                int barColor = getBarColor(renderTarget);
+                RenderUtil.drawRoundedRect(barX, barY, fillW, barH, 2.0f, barColor);
+            }
+        } finally {
+            GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+            GlStateManager.popMatrix();
         }
     }
 
-    private void renderPlayerHead(EntityPlayer player, float x, float y, float size) {
+    private String trimName(String name, float maxWidth) {
+        if (name == null) return "";
+        if (FontUtil.bold.getStringWidth(name) <= maxWidth) return name;
+        String trimmed = name;
+        while (trimmed.length() > 1 && FontUtil.bold.getStringWidth(trimmed + "..") > maxWidth) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + "..";
+    }
+
+    private void renderPlayerHead(EntityPlayer player, float hx, float hy, float size) {
         if (player instanceof AbstractClientPlayer) {
             mc.getTextureManager().bindTexture(((AbstractClientPlayer) player).getLocationSkin());
         } else {
-            mc.getTextureManager().bindTexture(net.minecraft.client.resources.DefaultPlayerSkin.getDefaultSkin(player.getUniqueID()));
+            mc.getTextureManager().bindTexture(DefaultPlayerSkin.getDefaultSkin(player.getUniqueID()));
         }
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+
+        float hurtFactor = player.hurtTime > 0 ? Math.min(1.0f, player.hurtTime / 10.0f) : 0.0f;
+        float shrink = hurtFactor * 1.5f;
+        float drawX = hx + shrink;
+        float drawY = hy + shrink;
+        float drawSize = size - shrink * 2.0f;
+
+        GlStateManager.enableTexture2D();
         GlStateManager.enableBlend();
+        GlStateManager.color(1.0f, 1.0f - 0.55f * hurtFactor, 1.0f - 0.55f * hurtFactor, 1.0f);
 
-        // 8x8 base head texture in 64x64 skin
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) y, 8.0f, 8.0f, 8, 8, (int) size, (int) size, 64.0f, 64.0f);
-        // Hat layer
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) y, 40.0f, 8.0f, 8, 8, (int) size, (int) size, 64.0f, 64.0f);
+        Gui.drawScaledCustomSizeModalRect((int) drawX, (int) drawY, 8.0f, 8.0f, 8, 8, (int) drawSize, (int) drawSize, 64.0f, 64.0f);
+        Gui.drawScaledCustomSizeModalRect((int) drawX, (int) drawY, 40.0f, 8.0f, 8, 8, (int) drawSize, (int) drawSize, 64.0f, 64.0f);
 
-        RenderUtil.drawRoundedOutline(x, y, size, size, 3.0f, 1.0f, 0xFF333338);
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+        if (hurtFactor > 0.05f) {
+            RenderUtil.drawRoundedRect(drawX, drawY, drawSize, drawSize, 2.5f, ColorUtil.modifyAlpha(0xFFFF2424, (int) (75 * hurtFactor)));
+        }
+        RenderUtil.drawRoundedOutline(hx, hy, size, size, 3.0f, 1.0f, hurtFactor > 0.05f ? 0xFFFF4444 : 0xFF33333C);
     }
 
-    private void renderTargetArmor(EntityPlayer player, float x, float y) {
+    private void renderTargetArmor(EntityPlayer player, float ax, float ay) {
         RenderHelper.enableGUIStandardItemLighting();
-        float itemX = x;
+        GlStateManager.enableDepth();
+        float itemX = ax;
         for (int i = 3; i >= 0; i--) {
             ItemStack stack = player.inventory.armorInventory[i];
             if (stack != null) {
-                GL11.glPushMatrix();
-                GL11.glScalef(0.7f, 0.7f, 0.7f);
-                mc.getRenderItem().renderItemAndEffectIntoGUI(stack, (int) (itemX / 0.7f), (int) (y / 0.7f));
-                GL11.glPopMatrix();
-                itemX += 13.0f;
+                GlStateManager.pushMatrix();
+                GL11.glScalef(0.65f, 0.65f, 0.65f);
+                mc.getRenderItem().renderItemAndEffectIntoGUI(stack, (int) (itemX / 0.65f), (int) (ay / 0.65f));
+                GlStateManager.popMatrix();
+                itemX += 11.5f;
             }
         }
         RenderHelper.disableStandardItemLighting();
+        GlStateManager.disableLighting();
+        GlStateManager.disableDepth();
+        GlStateManager.enableBlend();
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     private int getBarColor(EntityLivingBase target) {
         String mode = colorMode.getMode();
         switch (mode.toLowerCase()) {
             case "theme":
-                return ColorUtil.ACCENT;
+                return ColorUtil.getAccent();
             case "rainbow":
                 return ColorUtil.getRainbow(4, target.getEntityId() * 100);
             case "health":
@@ -163,14 +272,26 @@ public class TargetHUD extends Module {
     }
 
     private EntityLivingBase getActiveTarget() {
+        if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getModuleManager() != null) {
+            KillAura killAura = Cigarette.INSTANCE.getModuleManager().getModuleByClass(KillAura.class);
+            if (killAura != null && killAura.isEnabled() && killAura.getCurrentTarget() != null && !killAura.getCurrentTarget().isDead) {
+                currentTarget = killAura.getCurrentTarget();
+                lastTargetTime = System.currentTimeMillis();
+                return currentTarget;
+            }
+        }
+
         if (currentTarget != null && !currentTarget.isDead && (System.currentTimeMillis() - lastTargetTime < 4000L)) {
             return currentTarget;
         }
 
         if (mc.objectMouseOver != null && mc.objectMouseOver.entityHit instanceof EntityLivingBase) {
-            currentTarget = (EntityLivingBase) mc.objectMouseOver.entityHit;
-            lastTargetTime = System.currentTimeMillis();
-            return currentTarget;
+            EntityLivingBase hit = (EntityLivingBase) mc.objectMouseOver.entityHit;
+            if (!hit.isDead && !AntiBot.isBot(hit) && hit.getEntityId() != -1337) {
+                currentTarget = hit;
+                lastTargetTime = System.currentTimeMillis();
+                return currentTarget;
+            }
         }
 
         return null;
@@ -190,5 +311,13 @@ public class TargetHUD extends Module {
 
     public void setY(float y) {
         this.y = y;
+    }
+
+    public float getWidth() {
+        return width;
+    }
+
+    public float getHeight() {
+        return height;
     }
 }

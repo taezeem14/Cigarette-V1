@@ -25,6 +25,11 @@ public class FastPlace extends Module {
         addSettings(delay, blocksOnly, projectilesOnly);
     }
 
+    @Override
+    public String getSuffix() {
+        return String.valueOf(delay.getValueInt());
+    }
+
     @EventTarget
     public void onTick(TickEvent event) {
         if (!event.isPre() || mc.thePlayer == null) return;
@@ -43,8 +48,8 @@ public class FastPlace extends Module {
         }
 
         try {
-            int currentDelay = MappingResolver.getFieldValue(mc, mc.getClass(), MappingResolver.MINECRAFT_RIGHT_CLICK_DELAY_TIMER);
-            if (currentDelay > delay.getValueInt()) {
+            Integer currentDelay = MappingResolver.getFieldValue(mc, mc.getClass(), MappingResolver.MINECRAFT_RIGHT_CLICK_DELAY_TIMER);
+            if (currentDelay != null && currentDelay > delay.getValueInt()) {
                 MappingResolver.setFieldValue(mc, delay.getValueInt(), mc.getClass(), MappingResolver.MINECRAFT_RIGHT_CLICK_DELAY_TIMER);
             }
         } catch (Exception ignored) {

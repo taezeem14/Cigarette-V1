@@ -7,10 +7,25 @@ public final class ColorUtil {
     // Theme Colors
     public static final int BACKGROUND = 0xFF141416;
     public static final int HEADER = 0xFF1A1A1D;
+    public static final int SURFACE = 0xFF18181C;
+    public static final int BORDER = 0xFF26262E;
     public static final int ACCENT = 0xFF3882F6;
     public static final int EMBER_ORANGE = 0xFFFF5722;
     public static final int TEXT_PRIMARY = 0xFFEBEBEF;
     public static final int TEXT_MUTED = 0xFF8E8E93;
+
+    public static final int ACCENT_ELECTRIC_BLUE = 0xFF3882F6;
+    public static final int ACCENT_EMBER_ORANGE = 0xFFFF5722;
+    public static final int ACCENT_AMETHYST = 0xFF8B5CF6;
+    public static final int ACCENT_EMERALD = 0xFF10B981;
+
+    public static final String[] THEME_PRESETS = {
+            "Electric Blue",
+            "Ember Orange",
+            "Amethyst",
+            "Emerald",
+            "Rainbow"
+    };
 
     public static final Color COLOR_BACKGROUND = new Color(0x14, 0x14, 0x16);
     public static final Color COLOR_HEADER = new Color(0x1A, 0x1A, 0x1D);
@@ -19,7 +34,70 @@ public final class ColorUtil {
     public static final Color COLOR_TEXT_PRIMARY = new Color(0xEB, 0xEB, 0xEF);
     public static final Color COLOR_TEXT_MUTED = new Color(0x8E, 0x8E, 0x93);
 
+    private static int activeAccent = ACCENT;
+    private static String themePreset = "Electric Blue";
+
     private ColorUtil() {
+    }
+
+    public static int getAccent() {
+        if ("Rainbow".equalsIgnoreCase(themePreset)) {
+            return getRainbow(4, 0);
+        }
+        return activeAccent;
+    }
+
+    public static void setAccent(int color) {
+        activeAccent = color;
+        if ("Rainbow".equalsIgnoreCase(themePreset)) {
+            themePreset = "Custom";
+        }
+    }
+
+    public static void setThemePreset(String preset) {
+        if (preset == null) {
+            return;
+        }
+        switch (preset.trim().toLowerCase()) {
+            case "ember orange":
+                themePreset = "Ember Orange";
+                activeAccent = ACCENT_EMBER_ORANGE;
+                break;
+            case "amethyst":
+                themePreset = "Amethyst";
+                activeAccent = ACCENT_AMETHYST;
+                break;
+            case "emerald":
+                themePreset = "Emerald";
+                activeAccent = ACCENT_EMERALD;
+                break;
+            case "rainbow":
+                themePreset = "Rainbow";
+                activeAccent = getRainbow(4, 0);
+                break;
+            case "electric blue":
+            default:
+                themePreset = "Electric Blue";
+                activeAccent = ACCENT_ELECTRIC_BLUE;
+                break;
+        }
+    }
+
+    public static String getThemePreset() {
+        return themePreset;
+    }
+
+    public static String cycleThemePreset() {
+        int currentIndex = 0;
+        for (int i = 0; i < THEME_PRESETS.length; i++) {
+            if (THEME_PRESETS[i].equalsIgnoreCase(themePreset)) {
+                currentIndex = i;
+                break;
+            }
+        }
+        String next = THEME_PRESETS[(currentIndex + 1) % THEME_PRESETS.length];
+        setThemePreset(next);
+        return themePreset;
     }
 
     public static int toRGBA(int r, int g, int b, int a) {

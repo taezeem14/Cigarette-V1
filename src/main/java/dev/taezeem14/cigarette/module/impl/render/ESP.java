@@ -4,6 +4,7 @@ import dev.taezeem14.cigarette.event.EventTarget;
 import dev.taezeem14.cigarette.event.impl.Render2DEvent;
 import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
+import dev.taezeem14.cigarette.module.impl.utility.AntiBot;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
 import dev.taezeem14.cigarette.setting.impl.ColorSetting;
 import dev.taezeem14.cigarette.setting.impl.ModeSetting;
@@ -31,10 +32,9 @@ public class ESP extends Module {
     public void onRender2D(Render2DEvent event) {
         if (mc.theWorld == null || mc.thePlayer == null) return;
 
-        FrustumUtil.updateFrustum();
-
         for (EntityPlayer player : mc.theWorld.playerEntities) {
             if (player == mc.thePlayer || player.isDead) continue;
+            if (player.getEntityId() == -1337 || AntiBot.isBot(player)) continue;
             if (player.isInvisible() && !invisibles.isEnabled()) continue;
 
             Vector4f bounds = FrustumUtil.getEntityPositionsOn2D(player, event.getPartialTicks());
@@ -49,15 +49,12 @@ public class ESP extends Module {
 
             int boxColor = getEntityColor(player);
 
-            // Render Box
             renderBox(x, y, w, h, boxColor);
 
-            // Render Health Bar
             if (healthBar.isEnabled()) {
                 renderHealthBar(player, x, y, h);
             }
 
-            // Render Armor Bar
             if (armorBar.isEnabled()) {
                 renderArmorBar(player, x, y, w, h);
             }
@@ -75,7 +72,6 @@ public class ESP extends Module {
                 break;
             case "full":
             default:
-                // Inner black shadow, colored line, outer black shadow
                 RenderUtil.drawOutline(x - 0.5f, y - 0.5f, w + 1.0f, h + 1.0f, 1.0f, 0x99000000);
                 RenderUtil.drawOutline(x, y, w, h, 1.0f, color);
                 RenderUtil.drawOutline(x + 0.5f, y + 0.5f, w - 1.0f, h - 1.0f, 1.0f, 0x99000000);
@@ -84,12 +80,10 @@ public class ESP extends Module {
     }
 
     private void renderCornerBox(float x, float y, float w, float h, int color) {
-        float lineW = w / 4.0f;
-        float lineH = h / 4.0f;
+        float lineW = Math.max(2.0f, w / 4.0f);
+        float lineH = Math.max(2.0f, h / 4.0f);
 
-        // Black shadow
         drawCornerLines(x - 0.5f, y - 0.5f, w + 1.0f, h + 1.0f, lineW, lineH, 0x99000000);
-        // Color lines
         drawCornerLines(x, y, w, h, lineW, lineH, color);
     }
 
@@ -100,15 +94,15 @@ public class ESP extends Module {
 
         // Top-Right
         RenderUtil.drawRect(x + w - lw, y, lw, 1.0f, color);
-        RenderUtil.drawRect(x + w, y, 1.0f, lh, color);
+        RenderUtil.drawRect(x + w - 1.0f, y, 1.0f, lh, color);
 
         // Bottom-Left
-        RenderUtil.drawRect(x, y + h, lw, 1.0f, color);
+        RenderUtil.drawRect(x, y + h - 1.0f, lw, 1.0f, color);
         RenderUtil.drawRect(x, y + h - lh, 1.0f, lh, color);
 
         // Bottom-Right
-        RenderUtil.drawRect(x + w - lw, y + h, lw, 1.0f, color);
-        RenderUtil.drawRect(x + w, y + h - lh, 1.0f, lh, color);
+        RenderUtil.drawRect(x + w - lw, y + h - 1.0f, lw, 1.0f, color);
+        RenderUtil.drawRect(x + w - 1.0f, y + h - lh, 1.0f, lh, color);
     }
 
     private void renderHealthBar(EntityPlayer player, float x, float y, float h) {
@@ -116,15 +110,13 @@ public class ESP extends Module {
         float barX = x - barWidth - 3.0f;
 
         float health = player.getHealth();
-        float maxHealth = player.getMaxHealth();
+        float maxHealth = Math.max(1.0f, player.getMaxHealth());
         float ratio = Math.max(0.0f, Math.min(1.0f, health / maxHealth));
 
         float barHeight = h * ratio;
 
-        // Background / Border
         RenderUtil.drawRect(barX - 0.5f, y - 0.5f, barWidth + 1.0f, h + 1.0f, 0xAA000000);
 
-        // Dynamic health color gradient
         int hpColor = ColorUtil.getHealthColor(health, maxHealth);
         RenderUtil.drawRect(barX, y + h - barHeight, barWidth, barHeight, hpColor);
     }
@@ -133,14 +125,13 @@ public class ESP extends Module {
         float barHeight = 2.0f;
         float barY = y + h + 3.0f;
 
-        int totalArmor = player.getTotalArmorValue(); // 0 to 20
+        int totalArmor = player.getTotalArmorValue();
         float ratio = Math.max(0.0f, Math.min(1.0f, (float) totalArmor / 20.0f));
 
         if (ratio > 0.0f) {
             float barW = w * ratio;
-
             RenderUtil.drawRect(x - 0.5f, barY - 0.5f, w + 1.0f, barHeight + 1.0f, 0xAA000000);
-            RenderUtil.drawRect(x, barY, barW, barHeight, 0xFF3882F6);
+            RenderUtil.drawRect(x, barY, barW, barHeight, ColorUtil.getAccent());
         }
     }
 
@@ -151,7 +142,7 @@ public class ESP extends Module {
                 if (player.getTeam() != null) {
                     String formatted = player.getTeam().formatString(player.getName());
                     for (int i = 0; i < formatted.length() - 1; i++) {
-                        if (formatted.charAt(i) == '§') {
+                        if (formatted.charAt(i) == '\u00a7') {
                             char code = formatted.charAt(i + 1);
                             int colIndex = "0123456789abcdef".indexOf(Character.toLowerCase(code));
                             if (colIndex != -1) {

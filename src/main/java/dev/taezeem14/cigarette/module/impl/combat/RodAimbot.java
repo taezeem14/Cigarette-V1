@@ -5,6 +5,7 @@ import dev.taezeem14.cigarette.event.impl.MotionEvent;
 import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
 import dev.taezeem14.cigarette.module.impl.client.FriendManager;
+import dev.taezeem14.cigarette.module.impl.utility.AntiBot;
 import dev.taezeem14.cigarette.module.impl.utility.Teams;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.math.RotationUtil;
@@ -12,6 +13,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemFishingRod;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 
 public class RodAimbot extends Module {
@@ -24,16 +26,21 @@ public class RodAimbot extends Module {
         addSettings(range, fov);
     }
 
+    @Override
+    public String getSuffix() {
+        return fov.getValueInt() + "°";
+    }
+
     @EventTarget
     public void onMotion(MotionEvent event) {
-        if (!event.isPre() || mc.thePlayer == null || mc.theWorld == null) return;
+        if (!event.isPre() || mc.thePlayer == null || mc.theWorld == null || mc.currentScreen != null) return;
 
         ItemStack held = mc.thePlayer.getHeldItem();
         if (held == null || !(held.getItem() instanceof ItemFishingRod)) {
             return;
         }
 
-        if (!mc.gameSettings.keyBindUseItem.isKeyDown()) {
+        if (!RotationUtil.isPhysicalKeyDown(mc.gameSettings.keyBindUseItem.getKeyCode())) {
             return;
         }
 
@@ -55,7 +62,7 @@ public class RodAimbot extends Module {
         float[] rotations = RotationUtil.getRotationsToVec(predictedVec);
 
         event.setYaw(rotations[0]);
-        event.setPitch(rotations[1]);
+        event.setPitch(MathHelper.clamp_float(rotations[1], -90.0F, 90.0F));
     }
 
     private EntityPlayer getBestTarget() {
@@ -66,6 +73,7 @@ public class RodAimbot extends Module {
             if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer) continue;
 
             EntityPlayer player = (EntityPlayer) entity;
+            if (player.getEntityId() == -1337 || AntiBot.isBot(player)) continue;
             if (player.isDead || player.getHealth() <= 0.0F || player.isInvisible()) continue;
             if (FriendManager.isFriend(player.getName())) continue;
             if (Teams.isTeammate(player)) continue;

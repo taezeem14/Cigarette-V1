@@ -11,56 +11,93 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.Vec3;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.Color;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 public final class RenderUtil {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Deque<int[]> SCISSOR_STACK = new ArrayDeque<>();
+    private static final Deque<Integer> STATE_STACK = new ArrayDeque<>();
+
+    private static final int FLAG_DEPTH = 1;
+    private static final int FLAG_BLEND = 2;
+    private static final int FLAG_TEXTURE = 4;
+    private static final int FLAG_ALPHA = 8;
 
     private RenderUtil() {
     }
 
     public static void enableGL2D() {
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDepthMask(true);
+        int flags = 0;
+        if (GL11.glIsEnabled(GL11.GL_DEPTH_TEST)) flags |= FLAG_DEPTH;
+        if (GL11.glIsEnabled(GL11.GL_BLEND)) flags |= FLAG_BLEND;
+        if (GL11.glIsEnabled(GL11.GL_TEXTURE_2D)) flags |= FLAG_TEXTURE;
+        if (GL11.glIsEnabled(GL11.GL_ALPHA_TEST)) flags |= FLAG_ALPHA;
+        STATE_STACK.push(flags);
+
+        GlStateManager.disableDepth();
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
+        GlStateManager.disableTexture2D();
+        GlStateManager.disableAlpha();
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
         GL11.glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_NICEST);
-        GL11.glHint(GL11.GL_POLYGON_SMOOTH_HINT, GL11.GL_NICEST);
     }
 
     public static void disableGL2D() {
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_BLEND);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         GL11.glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_DONT_CARE);
-        GL11.glHint(GL11.GL_POLYGON_SMOOTH_HINT, GL11.GL_DONT_CARE);
+
+        int flags = STATE_STACK.isEmpty() ? (FLAG_TEXTURE | FLAG_DEPTH | FLAG_ALPHA) : STATE_STACK.pop();
+        if ((flags & FLAG_TEXTURE) != 0) {
+            GlStateManager.enableTexture2D();
+        } else {
+            GlStateManager.disableTexture2D();
+        }
+        if ((flags & FLAG_BLEND) != 0) {
+            GlStateManager.enableBlend();
+        } else {
+            GlStateManager.disableBlend();
+        }
+        if ((flags & FLAG_ALPHA) != 0) {
+            GlStateManager.enableAlpha();
+        } else {
+            GlStateManager.disableAlpha();
+        }
+        if ((flags & FLAG_DEPTH) != 0) {
+            GlStateManager.enableDepth();
+        } else {
+            GlStateManager.disableDepth();
+        }
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     public static void enableGL3D() {
-        GL11.glPushMatrix();
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glShadeModel(GL11.GL_SMOOTH);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
+        GlStateManager.pushMatrix();
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
+        GlStateManager.shadeModel(GL11.GL_SMOOTH);
+        GlStateManager.disableTexture2D();
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glDepthMask(false);
+        GlStateManager.disableDepth();
+        GlStateManager.disableLighting();
+        GlStateManager.disableAlpha();
+        GlStateManager.depthMask(false);
         GL11.glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_NICEST);
     }
 
     public static void disableGL3D() {
-        GL11.glDepthMask(true);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GlStateManager.depthMask(true);
+        GlStateManager.enableAlpha();
+        GlStateManager.enableDepth();
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_BLEND);
-        GL11.glShadeModel(GL11.GL_FLAT);
-        GL11.glPopMatrix();
+        GL11.glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_DONT_CARE);
+        GlStateManager.enableTexture2D();
+        GlStateManager.disableBlend();
+        GlStateManager.shadeModel(GL11.GL_FLAT);
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        GlStateManager.popMatrix();
     }
 
     public static void color(int color) {
@@ -68,10 +105,11 @@ public final class RenderUtil {
         float red = (color >> 16 & 0xFF) / 255.0F;
         float green = (color >> 8 & 0xFF) / 255.0F;
         float blue = (color & 0xFF) / 255.0F;
-        GL11.glColor4f(red, green, blue, alpha);
+        GlStateManager.color(red, green, blue, alpha);
     }
 
     public static void drawRect(float x, float y, float width, float height, int color) {
+        if (width <= 0.0f || height <= 0.0f) return;
         enableGL2D();
         color(color);
         GL11.glBegin(GL11.GL_QUADS);
@@ -89,6 +127,7 @@ public final class RenderUtil {
     }
 
     public static void drawOutline(float x, float y, float width, float height, float lineWidth, int color) {
+        if (width <= 0.0f || height <= 0.0f) return;
         enableGL2D();
         color(color);
         GL11.glLineWidth(lineWidth);
@@ -98,10 +137,18 @@ public final class RenderUtil {
         GL11.glVertex2f(x + width, y + height);
         GL11.glVertex2f(x, y + height);
         GL11.glEnd();
+        GL11.glLineWidth(1.0F);
         disableGL2D();
     }
 
     public static void drawRoundedRect(float x, float y, float width, float height, float radius, int color) {
+        if (width <= 0.0f || height <= 0.0f) return;
+        radius = Math.max(0.0f, Math.min(radius, Math.min(width, height) / 2.0f));
+        if (radius <= 0.05f) {
+            drawRect(x, y, width, height, color);
+            return;
+        }
+
         float x1 = x;
         float y1 = y;
         float x2 = x + width;
@@ -112,25 +159,18 @@ public final class RenderUtil {
 
         GL11.glBegin(GL11.GL_POLYGON);
 
-        // Top-left corner
         for (int i = 0; i <= 90; i += 3) {
             double rad = Math.toRadians(i);
             GL11.glVertex2d(x1 + radius - Math.sin(rad) * radius, y1 + radius - Math.cos(rad) * radius);
         }
-
-        // Bottom-left corner
         for (int i = 90; i <= 180; i += 3) {
             double rad = Math.toRadians(i);
             GL11.glVertex2d(x1 + radius - Math.sin(rad) * radius, y2 - radius - Math.cos(rad) * radius);
         }
-
-        // Bottom-right corner
         for (int i = 180; i <= 270; i += 3) {
             double rad = Math.toRadians(i);
             GL11.glVertex2d(x2 - radius - Math.sin(rad) * radius, y2 - radius - Math.cos(rad) * radius);
         }
-
-        // Top-right corner
         for (int i = 270; i <= 360; i += 3) {
             double rad = Math.toRadians(i);
             GL11.glVertex2d(x2 - radius - Math.sin(rad) * radius, y1 + radius - Math.cos(rad) * radius);
@@ -140,7 +180,76 @@ public final class RenderUtil {
         disableGL2D();
     }
 
+    public static void drawRoundedRectTop(float x, float y, float width, float height, float radius, int color) {
+        if (width <= 0.0f || height <= 0.0f) return;
+        radius = Math.max(0.0f, Math.min(radius, Math.min(width / 2.0f, height)));
+        if (radius <= 0.05f) {
+            drawRect(x, y, width, height, color);
+            return;
+        }
+
+        float x1 = x;
+        float y1 = y;
+        float x2 = x + width;
+        float y2 = y + height;
+
+        enableGL2D();
+        color(color);
+
+        GL11.glBegin(GL11.GL_POLYGON);
+        for (int i = 0; i <= 90; i += 3) {
+            double rad = Math.toRadians(i);
+            GL11.glVertex2d(x1 + radius - Math.sin(rad) * radius, y1 + radius - Math.cos(rad) * radius);
+        }
+        GL11.glVertex2d(x1, y2);
+        GL11.glVertex2d(x2, y2);
+        for (int i = 270; i <= 360; i += 3) {
+            double rad = Math.toRadians(i);
+            GL11.glVertex2d(x2 - radius - Math.sin(rad) * radius, y1 + radius - Math.cos(rad) * radius);
+        }
+        GL11.glEnd();
+        disableGL2D();
+    }
+
+    public static void drawRoundedRectBottom(float x, float y, float width, float height, float radius, int color) {
+        if (width <= 0.0f || height <= 0.0f) return;
+        radius = Math.max(0.0f, Math.min(radius, Math.min(width / 2.0f, height)));
+        if (radius <= 0.05f) {
+            drawRect(x, y, width, height, color);
+            return;
+        }
+
+        float x1 = x;
+        float y1 = y;
+        float x2 = x + width;
+        float y2 = y + height;
+
+        enableGL2D();
+        color(color);
+
+        GL11.glBegin(GL11.GL_POLYGON);
+        GL11.glVertex2d(x1, y1);
+        for (int i = 90; i <= 180; i += 3) {
+            double rad = Math.toRadians(i);
+            GL11.glVertex2d(x1 + radius - Math.sin(rad) * radius, y2 - radius - Math.cos(rad) * radius);
+        }
+        for (int i = 180; i <= 270; i += 3) {
+            double rad = Math.toRadians(i);
+            GL11.glVertex2d(x2 - radius - Math.sin(rad) * radius, y2 - radius - Math.cos(rad) * radius);
+        }
+        GL11.glVertex2d(x2, y1);
+        GL11.glEnd();
+        disableGL2D();
+    }
+
     public static void drawRoundedOutline(float x, float y, float width, float height, float radius, float lineWidth, int color) {
+        if (width <= 0.0f || height <= 0.0f) return;
+        radius = Math.max(0.0f, Math.min(radius, Math.min(width, height) / 2.0f));
+        if (radius <= 0.05f) {
+            drawOutline(x, y, width, height, lineWidth, color);
+            return;
+        }
+
         float x1 = x;
         float y1 = y;
         float x2 = x + width;
@@ -170,12 +279,43 @@ public final class RenderUtil {
         }
 
         GL11.glEnd();
+        GL11.glLineWidth(1.0F);
+        disableGL2D();
+    }
+
+    public static void drawCircle(float cx, float cy, float radius, int color) {
+        if (radius <= 0.0f) return;
+        enableGL2D();
+        color(color);
+        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
+        GL11.glVertex2f(cx, cy);
+        for (int i = 0; i <= 360; i += 6) {
+            double rad = Math.toRadians(i);
+            GL11.glVertex2d(cx + Math.sin(rad) * radius, cy + Math.cos(rad) * radius);
+        }
+        GL11.glEnd();
+        disableGL2D();
+    }
+
+    public static void drawCircleOutline(float cx, float cy, float radius, float lineWidth, int color) {
+        if (radius <= 0.0f) return;
+        enableGL2D();
+        color(color);
+        GL11.glLineWidth(lineWidth);
+        GL11.glBegin(GL11.GL_LINE_LOOP);
+        for (int i = 0; i < 360; i += 6) {
+            double rad = Math.toRadians(i);
+            GL11.glVertex2d(cx + Math.sin(rad) * radius, cy + Math.cos(rad) * radius);
+        }
+        GL11.glEnd();
+        GL11.glLineWidth(1.0F);
         disableGL2D();
     }
 
     public static void drawGradientRect(float x, float y, float width, float height, int startColor, int endColor, boolean horizontal) {
+        if (width <= 0.0f || height <= 0.0f) return;
         enableGL2D();
-        GL11.glShadeModel(GL11.GL_SMOOTH);
+        GlStateManager.shadeModel(GL11.GL_SMOOTH);
         GL11.glBegin(GL11.GL_QUADS);
 
         if (horizontal) {
@@ -196,42 +336,87 @@ public final class RenderUtil {
         }
 
         GL11.glEnd();
-        GL11.glShadeModel(GL11.GL_FLAT);
+        GlStateManager.shadeModel(GL11.GL_FLAT);
         disableGL2D();
     }
 
     public static void drawDropShadow(float x, float y, float width, float height, float radius, int shadowColor) {
+        if (width <= 0.0f || height <= 0.0f) return;
         int shadowAlpha = ColorUtil.getAlpha(shadowColor);
-        int steps = (int) Math.max(1, radius);
+        if (shadowAlpha <= 0) return;
+
+        int steps = Math.max(1, Math.min(8, (int) Math.ceil(radius)));
         for (int i = 0; i < steps; i++) {
-            float spread = (float) i;
-            float alphaFactor = (1.0f - (float) i / (float) steps);
-            int alpha = (int) (shadowAlpha * (alphaFactor * alphaFactor * 0.35f));
+            float spread = (float) i + 0.5f;
+            float alphaFactor = 1.0f - (float) i / (float) steps;
+            int alpha = (int) (shadowAlpha * (alphaFactor * alphaFactor * 0.30f));
+            if (alpha <= 0) continue;
             int col = ColorUtil.modifyAlpha(shadowColor, alpha);
-            drawRoundedOutline(x - spread, y - spread, width + spread * 2, height + spread * 2, radius + spread, 1.0f, col);
+            drawRoundedOutline(x - spread, y - spread, width + spread * 2.0f, height + spread * 2.0f, radius + spread, 1.2f, col);
         }
     }
 
-    public static void startScissor(float x, float y, float width, float height) {
+    public static void pushScissor(float x, float y, float width, float height, float scaleMultiplier) {
         ScaledResolution sr = new ScaledResolution(mc);
-        int scale = sr.getScaleFactor();
+        double totalScale = sr.getScaleFactor() * (double) Math.max(0.01f, scaleMultiplier);
 
-        int scissorX = (int) (x * scale);
-        int scissorY = (int) ((sr.getScaledHeight() - (y + height)) * scale);
-        int scissorWidth = (int) (width * scale);
-        int scissorHeight = (int) (height * scale);
+        int left = (int) Math.floor(x * totalScale);
+        int right = (int) Math.ceil((x + Math.max(0.0f, width)) * totalScale);
+        int topFromTop = (int) Math.floor(y * totalScale);
+        int bottomFromTop = (int) Math.ceil((y + Math.max(0.0f, height)) * totalScale);
+
+        int bottom = mc.displayHeight - bottomFromTop;
+        int top = mc.displayHeight - topFromTop;
+
+        left = Math.max(0, Math.min(mc.displayWidth, left));
+        right = Math.max(left, Math.min(mc.displayWidth, right));
+        bottom = Math.max(0, Math.min(mc.displayHeight, bottom));
+        top = Math.max(bottom, Math.min(mc.displayHeight, top));
+
+        int[] parent = SCISSOR_STACK.peek();
+        if (parent != null) {
+            left = Math.max(left, parent[0]);
+            bottom = Math.max(bottom, parent[1]);
+            right = Math.max(left, Math.min(right, parent[2]));
+            top = Math.max(bottom, Math.min(top, parent[3]));
+        }
+
+        int[] box = new int[]{left, bottom, right, top};
+        SCISSOR_STACK.push(box);
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(
-                Math.max(0, scissorX),
-                Math.max(0, scissorY),
-                Math.max(0, scissorWidth),
-                Math.max(0, scissorHeight)
-        );
+        GL11.glScissor(left, bottom, Math.max(0, right - left), Math.max(0, top - bottom));
+    }
+
+    public static void pushScissor(float x, float y, float width, float height) {
+        pushScissor(x, y, width, height, 1.0f);
+    }
+
+    public static void popScissor() {
+        if (!SCISSOR_STACK.isEmpty()) {
+            SCISSOR_STACK.pop();
+        }
+
+        if (SCISSOR_STACK.isEmpty()) {
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        } else {
+            int[] parent = SCISSOR_STACK.peek();
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            GL11.glScissor(parent[0], parent[1], Math.max(0, parent[2] - parent[0]), Math.max(0, parent[3] - parent[1]));
+        }
+    }
+
+    public static void clearScissorStack() {
+        SCISSOR_STACK.clear();
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+    }
+
+    public static void startScissor(float x, float y, float width, float height) {
+        pushScissor(x, y, width, height);
     }
 
     public static void stopScissor() {
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        popScissor();
     }
 
     public static void draw3DBox(AxisAlignedBB bb, int color, boolean fill, boolean outline, float lineWidth) {
@@ -256,6 +441,7 @@ public final class RenderUtil {
             color(ColorUtil.modifyAlpha(color, 255));
             GL11.glLineWidth(lineWidth);
             drawOutlinedBox(box);
+            GL11.glLineWidth(1.0F);
         }
 
         disableGL3D();
@@ -356,6 +542,7 @@ public final class RenderUtil {
         GL11.glVertex3d(end.xCoord - renderX, end.yCoord - renderY, end.zCoord - renderZ);
         GL11.glEnd();
 
+        GL11.glLineWidth(1.0F);
         disableGL3D();
     }
 }

@@ -16,6 +16,11 @@ public class KeepSprint extends Module {
         instance = this;
     }
 
+    @Override
+    public String getSuffix() {
+        return slowdownReduction.getValueInt() + "%";
+    }
+
     public static boolean shouldKeepSprint() {
         return instance != null && instance.isEnabled();
     }
