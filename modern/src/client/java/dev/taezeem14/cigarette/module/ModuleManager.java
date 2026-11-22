@@ -105,7 +105,14 @@ public class ModuleManager {
             return;
         }
         for (Module m : modules) {
-            if (m.getKeyCode() == keyCode) {
+            boolean matches = (m.getKeyCode() == keyCode);
+            if (!matches && m instanceof dev.taezeem14.cigarette.module.impl.render.ClickGUIModule) {
+                if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_RSHIFT
+                        || keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_INSERT) {
+                    matches = true;
+                }
+            }
+            if (matches) {
                 m.toggle();
             }
         }

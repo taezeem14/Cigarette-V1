@@ -41,7 +41,7 @@ public class KillAura extends Module {
     private final ModeSetting rotations = new ModeSetting("Rotations", "Smooth", "Smooth", "Linear", "Instant");
     private final BooleanSetting keepSprint = new BooleanSetting("KeepSprint", true);
     private final BooleanSetting targetPlayers = new BooleanSetting("Players", true);
-    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", false);
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", true);
     private final BooleanSetting targetInvisibles = new BooleanSetting("Invisibles", true);
 
     private final TimerUtil attackTimer = new TimerUtil();

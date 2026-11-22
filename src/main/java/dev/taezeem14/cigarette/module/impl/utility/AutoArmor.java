@@ -43,6 +43,14 @@ public class AutoArmor extends Module {
         for (int type = 0; type < 4; type++) {
             int bestSlot = InventoryUtil.findBestArmor(type);
             if (bestSlot != -1) {
+                // If armor slot (5..8) is already occupied by weaker armor, unequip it first so shift-click can place the upgrade
+                int armorSlot = 5 + type;
+                if (mc.thePlayer.inventoryContainer.getSlot(armorSlot).getHasStack()) {
+                    InventoryUtil.shiftClick(armorSlot);
+                    currentDelay = (long) delay.getRandomValue();
+                    timer.reset();
+                    return;
+                }
                 InventoryUtil.shiftClick(bestSlot);
                 currentDelay = (long) delay.getRandomValue();
                 timer.reset();

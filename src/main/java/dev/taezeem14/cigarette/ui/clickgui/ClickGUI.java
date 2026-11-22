@@ -494,7 +494,8 @@ public class ClickGUI extends GuiScreen {
         }
 
         ClickGUIModule clickGUIModule = getClickGUIModule();
-        if (keyCode == Keyboard.KEY_ESCAPE || (!searchFocused && clickGUIModule != null && keyCode == clickGUIModule.getKeyCode())) {
+        if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_RSHIFT || keyCode == Keyboard.KEY_INSERT
+                || (!searchFocused && clickGUIModule != null && keyCode == clickGUIModule.getKeyCode())) {
             mc.displayGuiScreen(null);
             return;
         }

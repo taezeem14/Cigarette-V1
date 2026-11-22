@@ -4,6 +4,7 @@ import javax.swing.Icon;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -47,7 +48,15 @@ public final class FaIcon implements Icon {
         POWER,
         MINUS,
         PLAY,
-        TERMINAL
+        TERMINAL,
+        KEYBOARD,
+        COPY,
+        CLOSE,
+        CHEVRON_DOWN,
+        INFO,
+        CPU,
+        RESET,
+        SPARKLES
     }
 
     private final Glyph glyph;
@@ -95,16 +104,24 @@ public final class FaIcon implements Icon {
     }
 
     public static BufferedImage createAppImage(int size, Color accent) {
+        Color safeAccent = accent != null ? accent : new Color(0x38, 0x82, 0xF6);
         BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = img.createGraphics();
         try {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(new Color(0x14, 0x14, 0x18));
-            g2.fillRoundRect(0, 0, size, size, Math.max(4, size / 4), Math.max(4, size / 4));
-            g2.setColor(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 190));
-            g2.setStroke(new BasicStroke(Math.max(1.2f, size / 14.0f)));
-            g2.drawRoundRect(1, 1, size - 3, size - 3, Math.max(4, size / 4), Math.max(4, size / 4));
-            FaIcon.of(Glyph.LOGO, (int) Math.round(size * 0.72), accent)
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            int arc = Math.max(5, size / 4);
+            g2.setPaint(new GradientPaint(0, 0, new Color(0x1D, 0x1D, 0x26), 0, size, new Color(0x10, 0x10, 0x15)));
+            g2.fillRoundRect(0, 0, size, size, arc, arc);
+
+            g2.setColor(new Color(safeAccent.getRed(), safeAccent.getGreen(), safeAccent.getBlue(), 40));
+            g2.fillRoundRect(2, 2, size - 4, size - 4, Math.max(3, arc - 2), Math.max(3, arc - 2));
+
+            g2.setColor(new Color(safeAccent.getRed(), safeAccent.getGreen(), safeAccent.getBlue(), 210));
+            g2.setStroke(new BasicStroke(Math.max(1.3f, size / 14.0f)));
+            g2.drawRoundRect(1, 1, size - 3, size - 3, arc, arc);
+
+            FaIcon.of(Glyph.LOGO, (int) Math.round(size * 0.72), safeAccent)
                     .paintIcon(null, g2, (int) Math.round(size * 0.14), (int) Math.round(size * 0.14));
         } finally {
             g2.dispose();
@@ -343,6 +360,64 @@ public final class FaIcon implements Icon {
                 g.draw(new RoundRectangle2D.Double(3.5, 4.5, 17.0, 15.0, 2.5, 2.5));
                 g.draw(chevronLine(7.0, 9.0, 10.5, 12.0, 7.0, 15.0));
                 g.draw(new Line2D.Double(12.5, 15.0, 16.5, 15.0));
+                break;
+            }
+            case KEYBOARD: {
+                g.setStroke(thin);
+                g.draw(new RoundRectangle2D.Double(2.5, 6.0, 19.0, 12.0, 2.5, 2.5));
+                g.fill(new Ellipse2D.Double(5.5, 9.0, 2.0, 2.0));
+                g.fill(new Ellipse2D.Double(9.2, 9.0, 2.0, 2.0));
+                g.fill(new Ellipse2D.Double(12.8, 9.0, 2.0, 2.0));
+                g.fill(new Ellipse2D.Double(16.5, 9.0, 2.0, 2.0));
+                g.draw(new Line2D.Double(7.5, 14.5, 16.5, 14.5));
+                break;
+            }
+            case COPY: {
+                g.setStroke(thin);
+                g.draw(new RoundRectangle2D.Double(8.5, 8.0, 11.0, 12.0, 2.0, 2.0));
+                g.draw(new Line2D.Double(5.0, 15.5, 5.0, 5.5));
+                g.draw(new Line2D.Double(5.0, 5.5, 15.0, 5.5));
+                break;
+            }
+            case CLOSE: {
+                g.draw(new Line2D.Double(6.0, 6.0, 18.0, 18.0));
+                g.draw(new Line2D.Double(18.0, 6.0, 6.0, 18.0));
+                break;
+            }
+            case CHEVRON_DOWN: {
+                g.draw(chevronLine(6.0, 9.0, 12.0, 15.5, 18.0, 9.0));
+                break;
+            }
+            case INFO: {
+                g.draw(new Ellipse2D.Double(3.5, 3.5, 17.0, 17.0));
+                g.fill(new Ellipse2D.Double(10.8, 7.2, 2.4, 2.4));
+                g.draw(new Line2D.Double(12.0, 11.5, 12.0, 16.8));
+                break;
+            }
+            case CPU: {
+                g.setStroke(thin);
+                g.draw(new RoundRectangle2D.Double(6.5, 6.5, 11.0, 11.0, 2.0, 2.0));
+                g.draw(new RoundRectangle2D.Double(9.5, 9.5, 5.0, 5.0, 1.0, 1.0));
+                g.draw(new Line2D.Double(9.5, 3.5, 9.5, 6.5));
+                g.draw(new Line2D.Double(14.5, 3.5, 14.5, 6.5));
+                g.draw(new Line2D.Double(9.5, 17.5, 9.5, 20.5));
+                g.draw(new Line2D.Double(14.5, 17.5, 14.5, 20.5));
+                g.draw(new Line2D.Double(3.5, 9.5, 6.5, 9.5));
+                g.draw(new Line2D.Double(3.5, 14.5, 6.5, 14.5));
+                g.draw(new Line2D.Double(17.5, 9.5, 20.5, 9.5));
+                g.draw(new Line2D.Double(17.5, 14.5, 20.5, 14.5));
+                break;
+            }
+            case RESET: {
+                g.draw(new Arc2D.Double(4.5, 4.5, 15.0, 15.0, 40, 280, Arc2D.OPEN));
+                g.draw(chevronLine(15.5, 4.0, 18.8, 7.2, 14.5, 8.8));
+                break;
+            }
+            case SPARKLES: {
+                g.setStroke(thin);
+                g.draw(diamond(11.0, 12.0, 6.0, 6.0));
+                g.fill(new Ellipse2D.Double(17.2, 4.5, 3.0, 3.0));
+                g.fill(new Ellipse2D.Double(4.5, 16.5, 2.4, 2.4));
                 break;
             }
         }

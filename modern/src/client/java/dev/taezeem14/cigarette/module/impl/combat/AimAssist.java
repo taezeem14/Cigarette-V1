@@ -14,6 +14,8 @@ import dev.taezeem14.cigarette.util.math.RotationUtil;
 import dev.taezeem14.cigarette.util.player.InventoryUtil;
 import dev.taezeem14.cigarette.util.render.AnimationUtil;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
@@ -27,7 +29,8 @@ public class AimAssist extends Module {
     private final NumberSetting fov = new NumberSetting("FOV", 90.0, 15.0, 360.0, 5.0);
     private final NumberSetting distance = new NumberSetting("Distance", 4.5, 3.0, 6.0, 0.1);
     private final BooleanSetting clickAim = new BooleanSetting("Click Aim", true);
-    private final BooleanSetting weaponOnly = new BooleanSetting("Weapon Only", true);
+    private final BooleanSetting weaponOnly = new BooleanSetting("Weapon Only", false);
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", true);
     private final BooleanSetting aimVertically = new BooleanSetting("Aim Vertically", false);
     private final BooleanSetting multipoint = new BooleanSetting("Multipoint Hitbox", true);
     private final BooleanSetting ignoreTeams = new BooleanSetting("Ignore Teams", true);
@@ -37,8 +40,8 @@ public class AimAssist extends Module {
     private float pendingPitchDelta = 0.0F;
 
     public AimAssist() {
-        super("AimAssist", "Smoothly assists aiming towards opponents", Category.COMBAT);
-        addSettings(horizontalSpeed, verticalSpeed, fov, distance, clickAim, weaponOnly, aimVertically, multipoint, ignoreTeams, breakBlocksCheck);
+        super("AimAssist", "Smoothly assists aiming towards opponents and mobs", Category.COMBAT);
+        addSettings(horizontalSpeed, verticalSpeed, fov, distance, clickAim, weaponOnly, targetMobs, aimVertically, multipoint, ignoreTeams, breakBlocksCheck);
     }
 
     @Override
@@ -83,7 +86,7 @@ public class AimAssist extends Module {
             return;
         }
 
-        Player target = getBestTarget();
+        LivingEntity target = getBestTarget();
         if (target == null) {
             pendingYawDelta = 0.0F;
             pendingPitchDelta = 0.0F;
@@ -129,20 +132,30 @@ public class AimAssist extends Module {
         }
     }
 
-    private Player getBestTarget() {
-        Player best = null;
+    private LivingEntity getBestTarget() {
+        LivingEntity best = null;
         double bestDist = distance.getValue();
-        for (Player player : mc.level.players()) {
-            if (player == mc.player || !player.isAlive() || player.isInvisible()) continue;
-            if (AntiBot.isBot(player)) continue;
-            if (FriendManager.isFriend(player.getName().getString())) continue;
-            if (ignoreTeams.isEnabled() && Teams.isTeammate(player)) continue;
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (!(entity instanceof LivingEntity living) || living == mc.player) continue;
+            if (!living.isAlive() || living.isInvisible()) continue;
 
-            double dist = mc.player.distanceTo(player);
+            if (living instanceof Player player) {
+                if (AntiBot.isBot(player)) continue;
+                if (FriendManager.isFriend(player.getName().getString())) continue;
+                if (ignoreTeams.isEnabled() && Teams.isTeammate(player)) continue;
+            } else if (!targetMobs.isEnabled()) {
+                continue;
+            }
+
+            double dist = mc.player.distanceTo(living);
             if (dist > bestDist) continue;
-            if (!RotationUtil.isEntityInFov(player, fov.getValueFloat())) continue;
+            if (!RotationUtil.isEntityInFov(living, fov.getValueFloat())) continue;
 
-            best = player;
+            if (best instanceof Player && !(living instanceof Player) && dist >= bestDist * 0.75) {
+                continue;
+            }
+
+            best = living;
             bestDist = dist;
         }
         return best;

@@ -22,10 +22,10 @@ public class Velocity extends Module {
     private final BooleanSetting onlyTargeting = new BooleanSetting("Only While Targeting", false);
     private final BooleanSetting waterCheck = new BooleanSetting("Water Check", false);
 
-    private boolean pendingVelocity = false;
-    private boolean pendingIsExplosion = false;
-    private int delayTicks = 0;
-    private double delayedMotionX, delayedMotionY, delayedMotionZ;
+    private volatile boolean pendingVelocity = false;
+    private volatile boolean pendingIsExplosion = false;
+    private volatile int delayTicks = 0;
+    private volatile double delayedMotionX, delayedMotionY, delayedMotionZ;
 
     public Velocity() {
         super("Velocity", "Reduces or eliminates incoming knockback", Category.COMBAT);

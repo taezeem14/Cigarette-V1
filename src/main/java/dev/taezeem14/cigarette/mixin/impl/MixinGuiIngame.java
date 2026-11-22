@@ -15,6 +15,7 @@ public abstract class MixinGuiIngame {
     @Inject(method = "renderTooltip", at = @At("RETURN"))
     private void onRenderTooltip(ScaledResolution sr, float partialTicks, CallbackInfo ci) {
         if (Cigarette.INSTANCE != null && !Cigarette.INSTANCE.isDestructed() && Cigarette.INSTANCE.getEventBus() != null) {
+            dev.taezeem14.cigarette.forge.ForgeEventBridge.lastMixinRender2DTime = System.currentTimeMillis();
             Cigarette.INSTANCE.getEventBus().post(new Render2DEvent(partialTicks, sr));
         }
     }

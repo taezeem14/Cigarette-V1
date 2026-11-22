@@ -107,7 +107,7 @@ public final class SimpleJson {
             else if (ch == '\n') sb.append("\\n");
             else if (ch == '\r') sb.append("\\r");
             else if (ch == '\t') sb.append("\\t");
-            else if (ch < 0x20) sb.append(String.format("\\u%04x", (int) ch));
+            else if (ch < 0x20) sb.append(String.format("\\u%04x", Integer.valueOf((int) ch)));
             else sb.append(ch);
         }
         sb.append('"');
@@ -155,6 +155,10 @@ public final class SimpleJson {
             }
             while (pos < src.length()) {
                 skipWhitespace();
+                if (pos < src.length() && src.charAt(pos) == '}') {
+                    pos++;
+                    break;
+                }
                 String key = parseString();
                 skipWhitespace();
                 if (pos < src.length() && src.charAt(pos) == ':') pos++;
@@ -182,6 +186,11 @@ public final class SimpleJson {
                 return list;
             }
             while (pos < src.length()) {
+                skipWhitespace();
+                if (pos < src.length() && src.charAt(pos) == ']') {
+                    pos++;
+                    break;
+                }
                 list.add(parseValue());
                 skipWhitespace();
                 if (pos < src.length() && src.charAt(pos) == ',') {
@@ -197,7 +206,7 @@ public final class SimpleJson {
         }
 
         String parseString() {
-            if (src.charAt(pos) != '"') {
+            if (pos >= src.length() || src.charAt(pos) != '"') {
                 throw new IllegalArgumentException("Expected quote at " + pos);
             }
             pos++;
@@ -233,6 +242,9 @@ public final class SimpleJson {
                 } else {
                     break;
                 }
+            }
+            if (pos == start) {
+                throw new IllegalArgumentException("Unexpected token at " + pos);
             }
             String token = src.substring(start, pos);
             if (token.indexOf('.') >= 0 || token.indexOf('e') >= 0 || token.indexOf('E') >= 0) {

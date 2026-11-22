@@ -139,7 +139,13 @@ public class Profile {
                     }
                 }
                 if (md.has("hidden") && md.get("hidden").isJsonPrimitive()) module.setHidden(md.get("hidden").getAsBoolean());
-                if (md.has("keyCode") && md.get("keyCode").isJsonPrimitive()) module.setKeyCode(md.get("keyCode").getAsInt());
+                if (md.has("keyCode") && md.get("keyCode").isJsonPrimitive()) {
+                    int kc = md.get("keyCode").getAsInt();
+                    if (module instanceof ClickGUIModule && kc <= 0) {
+                        kc = com.mojang.blaze3d.platform.InputConstants.KEY_RSHIFT;
+                    }
+                    module.setKeyCode(kc);
+                }
                 if (md.has("enabled") && md.get("enabled").isJsonPrimitive()) {
                     boolean en = md.get("enabled").getAsBoolean();
                     if (module instanceof SelfDestruct) module.setState(false);

@@ -376,7 +376,10 @@ public class ClickGUI extends Screen {
         }
 
         ClickGUIModule mod = getClickGUIModule();
-        if (keyCode == InputConstants.KEY_ESCAPE || (!searchFocused && mod != null && keyCode == mod.getKeyCode())) {
+        if (keyCode == InputConstants.KEY_ESCAPE
+                || keyCode == InputConstants.KEY_RSHIFT
+                || keyCode == InputConstants.KEY_INSERT
+                || (!searchFocused && mod != null && keyCode == mod.getKeyCode())) {
             this.minecraft.gui.setScreen(null);
             return true;
         }

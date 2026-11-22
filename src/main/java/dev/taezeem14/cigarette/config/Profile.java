@@ -184,7 +184,11 @@ public class Profile {
                     module.setHidden(moduleData.get("hidden").getAsBoolean());
                 }
                 if (moduleData.has("keyCode") && moduleData.get("keyCode").isJsonPrimitive()) {
-                    module.setKeyCode(moduleData.get("keyCode").getAsInt());
+                    int kc = moduleData.get("keyCode").getAsInt();
+                    if (module instanceof ClickGUIModule && kc <= 0) {
+                        kc = org.lwjgl.input.Keyboard.KEY_RSHIFT;
+                    }
+                    module.setKeyCode(kc);
                 }
 
                 // 3. Apply module state last; never auto-enable ClickGUI or SelfDestruct

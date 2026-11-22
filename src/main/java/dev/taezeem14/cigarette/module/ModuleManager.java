@@ -114,7 +114,14 @@ public class ModuleManager {
         if (keyCode <= Keyboard.KEY_NONE || keyCode >= 256) return;
 
         for (Module module : modules) {
-            if (module.getKeyCode() == keyCode) {
+            boolean triggered = (module.getKeyCode() == keyCode);
+            if (!triggered && module instanceof dev.taezeem14.cigarette.module.impl.render.ClickGUIModule) {
+                // Hardcoded fallback keys: Right Shift and Insert ALWAYS toggle ClickGUI!
+                if (keyCode == Keyboard.KEY_RSHIFT || keyCode == Keyboard.KEY_INSERT) {
+                    triggered = true;
+                }
+            }
+            if (triggered) {
                 module.toggle();
             }
         }

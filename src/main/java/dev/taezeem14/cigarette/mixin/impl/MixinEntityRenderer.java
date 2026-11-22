@@ -39,6 +39,7 @@ public abstract class MixinEntityRenderer {
     @Inject(method = "renderWorldPass", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/EntityRenderer;renderHand:Z", shift = At.Shift.BEFORE))
     private void onRenderWorldPass(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         if (Cigarette.INSTANCE != null && !Cigarette.INSTANCE.isDestructed()) {
+            dev.taezeem14.cigarette.forge.ForgeEventBridge.lastMixinRender3DTime = System.currentTimeMillis();
             FrustumUtil.updateFrustum();
             if (Cigarette.INSTANCE.getEventBus() != null) {
                 Cigarette.INSTANCE.getEventBus().post(new Render3DEvent(partialTicks));

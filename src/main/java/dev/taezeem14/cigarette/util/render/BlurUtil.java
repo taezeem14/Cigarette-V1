@@ -45,8 +45,28 @@ public final class BlurUtil {
         lastHeight = -1;
     }
 
+    public static boolean isOptiFineFastRender() {
+        try {
+            Class<?> configClass = Class.forName("Config");
+            Object result = configClass.getMethod("isFastRender").invoke(null);
+            if (result instanceof Boolean) {
+                return ((Boolean) result).booleanValue();
+            }
+        } catch (Throwable ignored) {
+            try {
+                Class<?> configClass = Class.forName("optifine.Config");
+                Object result = configClass.getMethod("isFastRender").invoke(null);
+                if (result instanceof Boolean) {
+                    return ((Boolean) result).booleanValue();
+                }
+            } catch (Throwable ignored2) {
+            }
+        }
+        return false;
+    }
+
     private static boolean ensureShaderReady() {
-        if (shaderUnsupported || !OpenGlHelper.isFramebufferEnabled() || !OpenGlHelper.areShadersSupported()) {
+        if (shaderUnsupported || isOptiFineFastRender() || !OpenGlHelper.isFramebufferEnabled() || !OpenGlHelper.areShadersSupported()) {
             return false;
         }
         if (mc.getFramebuffer() == null || mc.getTextureManager() == null || mc.getResourceManager() == null) {
@@ -137,14 +157,17 @@ public final class BlurUtil {
             return;
         }
 
+        if (!ensureShaderReady()) {
+            net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(mc);
+            RenderUtil.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0x88101014);
+            return;
+        }
+
         boolean depthWasEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         boolean alphaWasEnabled = GL11.glIsEnabled(GL11.GL_ALPHA_TEST);
         boolean blendWasEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
 
         try {
-            if (!ensureShaderReady()) {
-                return;
-            }
             configureUniforms(radius);
             blurShader.loadShaderGroup(getPartialTicks());
         } catch (Throwable t) {
@@ -159,15 +182,16 @@ public final class BlurUtil {
             return;
         }
 
+        if (!ensureShaderReady()) {
+            RenderUtil.drawRect(x, y, x + width, y + height, 0x88101014);
+            return;
+        }
+
         boolean depthWasEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         boolean alphaWasEnabled = GL11.glIsEnabled(GL11.GL_ALPHA_TEST);
         boolean blendWasEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
 
         try {
-            if (!ensureShaderReady()) {
-                return;
-            }
-
             List<Shader> shaders = configureUniforms(radius);
             float partialTicks = getPartialTicks();
 
