@@ -1018,4 +1018,12 @@ public class ClickGUI extends GuiScreen {
         }
         return null;
     }
+
+    public float getGuiScale() {
+        return userScale;
+    }
+
+    public void setGuiScale(float guiScale) {
+        this.userScale = AnimationUtil.clamp(guiScale, 0.70f, 1.25f);
+    }
 }

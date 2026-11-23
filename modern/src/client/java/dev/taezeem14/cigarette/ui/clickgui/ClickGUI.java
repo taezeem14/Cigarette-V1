@@ -803,4 +803,12 @@ public class ClickGUI extends Screen {
         }
         return null;
     }
+
+    public float getGuiScale() {
+        return userScale;
+    }
+
+    public void setGuiScale(float guiScale) {
+        this.userScale = AnimationUtil.clamp(guiScale, 0.70F, 1.25F);
+    }
 }
