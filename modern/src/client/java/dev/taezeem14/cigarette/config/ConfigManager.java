@@ -107,6 +107,14 @@ public class ConfigManager {
         return currentProfile;
     }
 
+    public Profile getActiveProfile() {
+        return currentProfile;
+    }
+
+    public List<String> listProfiles() {
+        return getProfileNames();
+    }
+
     public void pollExternalSync() {
         CigaretteModernClient inst = CigaretteModernClient.getInstance();
         if (inst == null || inst.isDestructed()) {

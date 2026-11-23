@@ -126,6 +126,10 @@ public final class RenderUtil {
         drawRoundedRect(g, cx - radius, cy - radius, radius * 2.0F, radius * 2.0F, radius, color);
     }
 
+    public static void drawCircleOutline(GuiGraphicsExtractor g, float cx, float cy, float radius, float thickness, int color) {
+        drawRoundedOutline(g, cx - radius, cy - radius, radius * 2.0F, radius * 2.0F, radius, thickness, color);
+    }
+
     public static void drawDropShadow(GuiGraphicsExtractor g, float x, float y, float width, float height, float radius, int color) {
         int baseAlpha = (color >> 24) & 0xFF;
         if (baseAlpha <= 0) return;
@@ -174,6 +178,10 @@ public final class RenderUtil {
 
     public static float getSmallFontHeight() {
         return getFontHeight() * 0.82F;
+    }
+
+    public static void pushScissor(GuiGraphicsExtractor g, float x, float y, float width, float height) {
+        pushScissor(g, x, y, width, height, 1.0F);
     }
 
     public static void pushScissor(GuiGraphicsExtractor g, float x, float y, float width, float height, float scaleMultiplier) {

@@ -78,16 +78,6 @@ public class Profile {
         ClickGUI gui = inst != null ? inst.getClickGUI() : null;
         if (gui != null) {
             uiJson.addProperty("guiScale", gui.getGuiScale());
-            JsonObject framesJson = new JsonObject();
-            for (CategoryFrame frame : gui.getFrames()) {
-                JsonObject fj = new JsonObject();
-                fj.addProperty("x", frame.getX());
-                fj.addProperty("y", frame.getY());
-                fj.addProperty("collapsed", frame.isCollapsed());
-                fj.addProperty("userMoved", frame.hasUserMoved());
-                framesJson.add(frame.getCategory().name(), fj);
-            }
-            uiJson.add("frames", framesJson);
         }
 
         if (mm != null) {
@@ -185,18 +175,6 @@ public class Profile {
             ClickGUI gui = inst != null ? inst.getClickGUI() : null;
             if (gui != null) {
                 if (ui.has("guiScale")) gui.setGuiScale(ui.get("guiScale").getAsFloat());
-                if (ui.has("frames") && ui.get("frames").isJsonObject()) {
-                    JsonObject fjMap = ui.getAsJsonObject("frames");
-                    for (CategoryFrame frame : gui.getFrames()) {
-                        String key = frame.getCategory().name();
-                        if (!fjMap.has(key) || !fjMap.get(key).isJsonObject()) continue;
-                        JsonObject fj = fjMap.getAsJsonObject(key);
-                        if (fj.has("x")) frame.setX(fj.get("x").getAsFloat());
-                        if (fj.has("y")) frame.setY(fj.get("y").getAsFloat());
-                        if (fj.has("collapsed")) frame.setCollapsed(fj.get("collapsed").getAsBoolean());
-                        if (fj.has("userMoved")) frame.setUserMoved(fj.get("userMoved").getAsBoolean());
-                    }
-                }
             }
         }
     }

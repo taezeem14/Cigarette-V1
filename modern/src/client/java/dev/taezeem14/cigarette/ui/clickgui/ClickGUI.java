@@ -97,7 +97,7 @@ public class ClickGUI extends Screen {
     }
 
     @Override
-    public void render(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTicks) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTicks) {
         fadeProgress = Math.min(1.0F, fadeProgress + AnimationUtil.getDeltaTime() * 7.5F);
 
         float screenW = (float) this.width;
@@ -128,7 +128,7 @@ public class ClickGUI extends Screen {
 
         g.pose().pushMatrix();
         try {
-            g.pose().scale(effectiveScale, effectiveScale, 1.0F);
+            g.pose().scale(effectiveScale, effectiveScale);
             int accent = ColorUtil.getAccent();
 
             renderSidebar(g, smx, smy, accent);
