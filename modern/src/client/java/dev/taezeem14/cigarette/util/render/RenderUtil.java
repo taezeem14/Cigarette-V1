@@ -239,6 +239,38 @@ public final class RenderUtil {
             drawRoundedOutline(g, x + 1.2F * s, y + 1.2F * s, 5.2F * s, 5.2F * s, 2.6F * s, 1.0F, color);
             drawRect(g, x + 5.8F * s, y + 5.8F * s, 1.4F * s, 1.4F * s, color);
             drawRect(g, x + 7.0F * s, y + 7.0F * s, 1.6F * s, 1.6F * s, color);
+        } else if ("gear".equals(key) || "settings".equals(key)) {
+            drawRoundedOutline(g, x + 2.5F * s, y + 2.5F * s, 5.0F * s, 5.0F * s, 2.5F * s, 1.0F, color);
+            drawRect(g, x + 4.3F * s, y + 0.5F * s, 1.4F * s, 1.6F * s, color);
+            drawRect(g, x + 4.3F * s, y + 7.9F * s, 1.4F * s, 1.6F * s, color);
+            drawRect(g, x + 0.5F * s, y + 4.3F * s, 1.6F * s, 1.4F * s, color);
+            drawRect(g, x + 7.9F * s, y + 4.3F * s, 1.6F * s, 1.4F * s, color);
+        } else if ("user".equals(key)) {
+            drawRoundedOutline(g, x + 3.0F * s, y + 1.2F * s, 4.0F * s, 4.0F * s, 2.0F * s, 1.0F, color);
+            drawRoundedOutline(g, x + 1.5F * s, y + 6.0F * s, 7.0F * s, 3.5F * s, 1.5F * s, 1.0F, color);
+        } else if ("chevron_right".equals(key) || ">".equals(key)) {
+            drawRect(g, x + 3.0F * s, y + 2.0F * s, 1.2F * s, 1.5F * s, color);
+            drawRect(g, x + 4.2F * s, y + 3.5F * s, 1.2F * s, 1.5F * s, color);
+            drawRect(g, x + 5.4F * s, y + 5.0F * s, 1.2F * s, 1.5F * s, color);
+            drawRect(g, x + 4.2F * s, y + 6.5F * s, 1.2F * s, 1.5F * s, color);
+            drawRect(g, x + 3.0F * s, y + 8.0F * s, 1.2F * s, 1.5F * s, color);
+        } else if ("chevron_up".equals(key) || "^".equals(key)) {
+            drawRect(g, x + 2.0F * s, y + 6.0F * s, 1.5F * s, 1.2F * s, color);
+            drawRect(g, x + 3.5F * s, y + 4.5F * s, 1.5F * s, 1.2F * s, color);
+            drawRect(g, x + 5.0F * s, y + 3.0F * s, 1.5F * s, 1.2F * s, color);
+            drawRect(g, x + 6.5F * s, y + 4.5F * s, 1.5F * s, 1.2F * s, color);
+            drawRect(g, x + 8.0F * s, y + 6.0F * s, 1.5F * s, 1.2F * s, color);
+        } else if ("profiles".equals(key)) {
+            drawRoundedOutline(g, x + 1.5F * s, y + 1.5F * s, 7.0F * s, 4.0F * s, 1.5F * s, 1.0F, color);
+            drawRoundedOutline(g, x + 1.5F * s, y + 4.5F * s, 7.0F * s, 4.0F * s, 1.5F * s, 1.0F, color);
+        } else if ("friends".equals(key)) {
+            drawCircle(g, x + 3.5F * s, y + 3.5F * s, 1.8F * s, color);
+            drawCircle(g, x + 7.0F * s, y + 4.0F * s, 1.4F * s, color);
+            drawRect(g, x + 1.5F * s, y + 6.5F * s, 4.0F * s, 2.5F * s, color);
+        } else if ("hud".equals(key)) {
+            drawRect(g, x + 1.5F * s, y + 2.5F * s, 7.0F * s, 1.2F * s, color);
+            drawRect(g, x + 1.5F * s, y + 5.0F * s, 7.0F * s, 1.2F * s, color);
+            drawRect(g, x + 1.5F * s, y + 7.5F * s, 7.0F * s, 1.2F * s, color);
         }
     }
 }

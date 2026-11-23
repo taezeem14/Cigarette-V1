@@ -113,12 +113,14 @@ public class ModuleButton {
             }
         }
 
-        // Expand chevron indicator
+        // Three vertical dots icon (authentic Vape V4 style)
         if (!components.isEmpty()) {
-            String arrow = expanded ? "v" : ">";
-            FontUtil.small.drawString(arrow, x + width - 9.0f,
-                    y + (height - FontUtil.small.getHeight()) / 2.0f,
-                    expanded ? accent : 0x99EBEBEF);
+            float dotX = x + width - 8.0f;
+            float dotY = y + height / 2.0f;
+            int dotCol = expanded ? accent : (hovered ? 0xFFFFFFFF : 0x77EBEBEF);
+            RenderUtil.drawCircle(dotX, dotY - 3.8f, 1.15f, dotCol);
+            RenderUtil.drawCircle(dotX, dotY, 1.15f, dotCol);
+            RenderUtil.drawCircle(dotX, dotY + 3.8f, 1.15f, dotCol);
         }
 
         // Expanded settings drawer with scale-aware nested scissor clipping
@@ -151,12 +153,13 @@ public class ModuleButton {
 
     public void mouseClicked(float mouseX, float mouseY, int mouseButton) {
         if (isHovered(mouseX, mouseY)) {
-            if (mouseButton == 0) {
-                module.toggle();
-            } else if (mouseButton == 1) {
+            boolean onDots = (mouseX >= x + width - 18.0f);
+            if (mouseButton == 1 || (mouseButton == 0 && onDots)) {
                 if (!components.isEmpty()) {
                     expanded = !expanded;
                 }
+            } else if (mouseButton == 0) {
+                module.toggle();
             } else if (mouseButton == 2) {
                 binding = !binding;
             }

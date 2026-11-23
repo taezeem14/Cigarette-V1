@@ -616,6 +616,53 @@ public final class RenderUtil {
             drawGlCircleOutline(x + 4.2f * s, y + 3.0f * s, 1.3f * s);
             drawGlCircleOutline(x + 7.8f * s, y + 6.0f * s, 1.3f * s);
             drawGlCircleOutline(x + 5.0f * s, y + 9.0f * s, 1.3f * s);
+        } else if ("gear".equals(key) || "settings".equals(key)) {
+            drawGlCircleOutline(x + 6.0f * s, y + 6.0f * s, 2.5f * s);
+            for (int i = 0; i < 6; i++) {
+                double a = i * Math.PI / 3.0;
+                float cos = (float) Math.cos(a);
+                float sin = (float) Math.sin(a);
+                drawGlLine(x + (6.0f + cos * 2.8f) * s, y + (6.0f + sin * 2.8f) * s,
+                           x + (6.0f + cos * 4.8f) * s, y + (6.0f + sin * 4.8f) * s);
+            }
+        } else if ("user".equals(key)) {
+            drawGlCircleOutline(x + 6.0f * s, y + 3.8f * s, 2.0f * s);
+            GL11.glBegin(GL11.GL_LINE_STRIP);
+            GL11.glVertex2f(x + 2.0f * s, y + 10.5f * s);
+            GL11.glVertex2f(x + 3.5f * s, y + 7.5f * s);
+            GL11.glVertex2f(x + 8.5f * s, y + 7.5f * s);
+            GL11.glVertex2f(x + 10.0f * s, y + 10.5f * s);
+            GL11.glEnd();
+        } else if ("friends".equals(key)) {
+            drawGlCircleOutline(x + 4.5f * s, y + 3.8f * s, 1.8f * s);
+            drawGlCircleOutline(x + 8.5f * s, y + 4.5f * s, 1.4f * s);
+            GL11.glBegin(GL11.GL_LINE_STRIP);
+            GL11.glVertex2f(x + 1.5f * s, y + 10.5f * s);
+            GL11.glVertex2f(x + 3.0f * s, y + 7.8f * s);
+            GL11.glVertex2f(x + 6.5f * s, y + 7.8f * s);
+            GL11.glEnd();
+        } else if ("star".equals(key)) {
+            GL11.glBegin(GL11.GL_LINE_LOOP);
+            GL11.glVertex2f(x + 6.0f * s, y + 1.5f * s);
+            GL11.glVertex2f(x + 7.3f * s, y + 4.5f * s);
+            GL11.glVertex2f(x + 10.5f * s, y + 4.8f * s);
+            GL11.glVertex2f(x + 8.0f * s, y + 7.0f * s);
+            GL11.glVertex2f(x + 8.8f * s, y + 10.2f * s);
+            GL11.glVertex2f(x + 6.0f * s, y + 8.4f * s);
+            GL11.glVertex2f(x + 3.2f * s, y + 10.2f * s);
+            GL11.glVertex2f(x + 4.0f * s, y + 7.0f * s);
+            GL11.glVertex2f(x + 1.5f * s, y + 4.8f * s);
+            GL11.glVertex2f(x + 4.7f * s, y + 4.5f * s);
+            GL11.glEnd();
+        } else if ("chevron_right".equals(key) || ">".equals(key)) {
+            drawGlLine(x + 4.0f * s, y + 2.5f * s, x + 8.0f * s, y + 6.0f * s);
+            drawGlLine(x + 8.0f * s, y + 6.0f * s, x + 4.0f * s, y + 9.5f * s);
+        } else if ("chevron_up".equals(key) || "^".equals(key)) {
+            drawGlLine(x + 2.5f * s, y + 7.5f * s, x + 6.0f * s, y + 3.5f * s);
+            drawGlLine(x + 6.0f * s, y + 3.5f * s, x + 9.5f * s, y + 7.5f * s);
+        } else if ("chevron_down".equals(key) || "v".equals(key)) {
+            drawGlLine(x + 2.5f * s, y + 4.5f * s, x + 6.0f * s, y + 8.5f * s);
+            drawGlLine(x + 6.0f * s, y + 8.5f * s, x + 9.5f * s, y + 4.5f * s);
         }
 
         GL11.glLineWidth(1.0F);

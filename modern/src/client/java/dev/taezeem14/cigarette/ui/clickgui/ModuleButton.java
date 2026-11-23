@@ -95,9 +95,12 @@ public class ModuleButton {
         }
 
         if (!components.isEmpty()) {
-            String arrow = expanded ? "v" : ">";
-            RenderUtil.drawSmallText(g, arrow, x + width - 9.0F,
-                    y + (height - RenderUtil.getSmallFontHeight()) / 2.0F, expanded ? accent : 0x99EBEBEF, false);
+            float dotX = x + width - 8.0F;
+            float dotY = y + height / 2.0F;
+            int dotCol = expanded ? accent : (hovered ? 0xFFFFFFFF : 0x77EBEBEF);
+            RenderUtil.drawCircle(g, dotX, dotY - 3.8F, 1.15F, dotCol);
+            RenderUtil.drawCircle(g, dotX, dotY, 1.15F, dotCol);
+            RenderUtil.drawCircle(g, dotX, dotY + 3.8F, 1.15F, dotCol);
         }
 
         float totalDrawerHeight = getDrawerHeight();
@@ -126,10 +129,13 @@ public class ModuleButton {
 
     public void mouseClicked(float mouseX, float mouseY, int mouseButton) {
         if (isHovered(mouseX, mouseY)) {
-            if (mouseButton == 0) {
+            boolean onDots = (mouseX >= x + width - 18.0F);
+            if (mouseButton == 1 || (mouseButton == 0 && onDots)) {
+                if (!components.isEmpty()) {
+                    expanded = !expanded;
+                }
+            } else if (mouseButton == 0) {
                 module.toggle();
-            } else if (mouseButton == 1 && !components.isEmpty()) {
-                expanded = !expanded;
             } else if (mouseButton == 2) {
                 binding = !binding;
             }

@@ -49,6 +49,10 @@ public class ClickGUIModule extends Module {
         return blurBackdrop.isEnabled();
     }
 
+    public BooleanSetting getBlurBackdrop() {
+        return blurBackdrop;
+    }
+
     public ModeSetting getThemeSetting() {
         return theme;
     }
