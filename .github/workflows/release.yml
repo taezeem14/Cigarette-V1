@@ -29,10 +29,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-release-
 
-      - name: Set up Java 8 (Temurin) for 1.8.9 Forge
+      - name: Set up Java 8 (Zulu) for 1.8.9 Forge
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '8'
 
       - name: Make Wrappers Executable
