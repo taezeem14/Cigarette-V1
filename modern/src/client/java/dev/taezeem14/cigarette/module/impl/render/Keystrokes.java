@@ -106,9 +106,9 @@ public class Keystrokes extends Module {
     }
 
     public float getX() { return posX.getValueFloat(); }
-    public void setX(float x) { posX.setValue(x); }
+    public void setX(float x) { posX.setValue((double) x); }
     public float getY() { return posY.getValueFloat(); }
-    public void setY(float y) { posY.setValue(y); }
+    public void setY(float y) { posY.setValue((double) y); }
 
     public float getWidth() {
         return 71.0F;

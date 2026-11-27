@@ -620,7 +620,7 @@ public class ClickGUI extends Screen {
             if (m != null) {
                 for (Setting<?> s : m.getSettings()) {
                     if ("1.9+ Cooldown".equalsIgnoreCase(s.getName()) && s instanceof BooleanSetting bs) {
-                        bs.setEnabled(next);
+                        bs.setValue(next);
                     }
                 }
             }
