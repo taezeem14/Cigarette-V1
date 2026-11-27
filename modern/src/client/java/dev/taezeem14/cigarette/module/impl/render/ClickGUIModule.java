@@ -18,7 +18,7 @@ public class ClickGUIModule extends Module {
     private final BooleanSetting blur = new BooleanSetting("Background Blur", true);
 
     public ClickGUIModule() {
-        super("ClickGUI", "Opens the Vape V4 style configuration interface", Category.RENDER, InputConstants.KEY_RSHIFT);
+        super("ClickGUI", "Opens the Cigarette V1 configuration interface", Category.RENDER, InputConstants.KEY_RSHIFT);
         addSettings(theme, useCustomAccent, accent, blur);
         accent.setVisibility(useCustomAccent::isEnabled);
     }
@@ -60,5 +60,9 @@ public class ClickGUIModule extends Module {
 
     public boolean isBlurEnabled() {
         return blur.isEnabled();
+    }
+
+    public BooleanSetting getBlurBackdrop() {
+        return blur;
     }
 }

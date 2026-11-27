@@ -12,11 +12,19 @@ import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.render.ColorUtil;
 import dev.taezeem14.cigarette.util.render.RenderUtil;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.boss.IBossDisplayData;
+import net.minecraft.entity.item.EntityArmorStand;
+import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.Vec3;
 
 public class Tracers extends Module {
 
+    private final BooleanSetting targetPlayers = new BooleanSetting("Players", true);
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", true);
     private final ModeSetting colorMode = new ModeSetting("Color Mode", "Distance", "Distance", "Team", "Static", "Rainbow");
     private final ColorSetting staticColor = new ColorSetting("Color", 0xFF3882F6);
     private final NumberSetting lineWidth = new NumberSetting("Line Width", 1.5, 0.5, 3.0, 0.1);
@@ -24,7 +32,7 @@ public class Tracers extends Module {
 
     public Tracers() {
         super("Tracers", "Draws 3D tracer lines from crosshair to entities", Category.RENDER);
-        addSettings(colorMode, staticColor, lineWidth, invisibles);
+        addSettings(targetPlayers, targetMobs, colorMode, staticColor, lineWidth, invisibles);
     }
 
     @EventTarget
@@ -32,37 +40,46 @@ public class Tracers extends Module {
         if (mc.theWorld == null || mc.thePlayer == null) return;
 
         float partialTicks = event.getPartialTicks();
+        RenderManager rm = mc.getRenderManager();
 
         Vec3 eyes = new Vec3(
-                mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * partialTicks,
-                mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * partialTicks + mc.thePlayer.getEyeHeight(),
-                mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * partialTicks
+                rm.viewerPosX,
+                rm.viewerPosY + mc.thePlayer.getEyeHeight(),
+                rm.viewerPosZ
         );
-
         Vec3 look = mc.thePlayer.getLook(partialTicks);
         Vec3 start = eyes.addVector(look.xCoord, look.yCoord, look.zCoord);
 
-        for (EntityPlayer player : mc.theWorld.playerEntities) {
-            if (player == mc.thePlayer || player.isDead) continue;
-            if (player.getEntityId() == -1337 || AntiBot.isBot(player)) continue;
-            if (player.isInvisible() && !invisibles.isEnabled()) continue;
+        for (Entity entity : mc.theWorld.loadedEntityList) {
+            if (!(entity instanceof EntityLivingBase) || entity == mc.thePlayer || entity.isDead) continue;
+            if (entity.getEntityId() == -1337 || entity instanceof EntityArmorStand) continue;
+
+            EntityLivingBase living = (EntityLivingBase) entity;
+            if (living.getHealth() <= 0.0f) continue;
+            if (living.isInvisible() && !invisibles.isEnabled()) continue;
+
+            if (living instanceof EntityPlayer) {
+                if (!targetPlayers.isEnabled() || AntiBot.isBot(living)) continue;
+            } else {
+                if (!targetMobs.isEnabled()) continue;
+            }
 
             Vec3 target = new Vec3(
-                    player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks,
-                    player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks + player.height / 2.0D,
-                    player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks
+                    living.lastTickPosX + (living.posX - living.lastTickPosX) * partialTicks,
+                    living.lastTickPosY + (living.posY - living.lastTickPosY) * partialTicks + living.height / 2.0D,
+                    living.lastTickPosZ + (living.posZ - living.lastTickPosZ) * partialTicks
             );
 
-            int color = getColor(player);
+            int color = getColor(living);
             RenderUtil.draw3DLine(start, target, color, lineWidth.getValueFloat());
         }
     }
 
-    private int getColor(EntityPlayer player) {
+    private int getColor(EntityLivingBase entity) {
         String mode = colorMode.getMode();
         switch (mode.toLowerCase()) {
             case "distance":
-                float dist = mc.thePlayer.getDistanceToEntity(player);
+                float dist = mc.thePlayer.getDistanceToEntity(entity);
                 if (dist <= 15.0f) {
                     return 0xFFFF3333;
                 } else if (dist <= 35.0f) {
@@ -71,20 +88,24 @@ public class Tracers extends Module {
                     return 0xFF33FF33;
                 }
             case "team":
-                if (player.getTeam() != null) {
-                    String formatted = player.getTeam().formatString(player.getName());
-                    for (int i = 0; i < formatted.length() - 1; i++) {
-                        if (formatted.charAt(i) == '\u00a7') {
-                            char code = formatted.charAt(i + 1);
-                            if ("0123456789abcdef".indexOf(Character.toLowerCase(code)) != -1) {
-                                return 0xFF000000 | mc.fontRendererObj.getColorCode(code);
+                if (entity instanceof EntityPlayer) {
+                    EntityPlayer player = (EntityPlayer) entity;
+                    if (player.getTeam() != null) {
+                        String formatted = player.getTeam().formatString(player.getName());
+                        for (int i = 0; i < formatted.length() - 1; i++) {
+                            if (formatted.charAt(i) == '\u00a7') {
+                                char code = formatted.charAt(i + 1);
+                                if ("0123456789abcdef".indexOf(Character.toLowerCase(code)) != -1) {
+                                    return 0xFF000000 | mc.fontRendererObj.getColorCode(code);
+                                }
                             }
                         }
                     }
+                    return Teams.isTeammate(player) ? 0xFF10B981 : 0xFFEF4444;
                 }
-                return Teams.isTeammate(player) ? 0xFF10B981 : 0xFFEF4444;
+                return (entity instanceof IMob || entity instanceof IBossDisplayData) ? 0xFFEF4444 : 0xFF10B981;
             case "rainbow":
-                return ColorUtil.getRainbow(4, player.getEntityId() * 100);
+                return ColorUtil.getRainbow(4, entity.getEntityId() * 100);
             case "static":
             default:
                 return staticColor.getRGB();

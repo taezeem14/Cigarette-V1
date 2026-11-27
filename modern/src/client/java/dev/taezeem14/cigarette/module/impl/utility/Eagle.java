@@ -26,7 +26,7 @@ public class Eagle extends Module {
     private long currentDelay = 25;
 
     public Eagle() {
-        super("Eagle", "Automatically sneaks at block edges for legit fastbridging", Category.UTILITY);
+        super("Eagle", "Automatically sneaks at block edges for legit fastbridging", Category.WORLD);
         addSettings(delay, blocksOnly, pitchCheck);
     }
 

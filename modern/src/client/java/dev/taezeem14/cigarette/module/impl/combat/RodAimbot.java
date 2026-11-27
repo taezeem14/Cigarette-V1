@@ -10,6 +10,9 @@ import dev.taezeem14.cigarette.module.impl.utility.Teams;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.math.RotationUtil;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -20,10 +23,11 @@ public class RodAimbot extends Module {
     private final NumberSetting fov = new NumberSetting("FOV", 90.0, 15.0, 180.0, 5.0);
     private final NumberSetting range = new NumberSetting("Range", 12.0, 4.0, 20.0, 0.5);
     private final BooleanSetting predict = new BooleanSetting("Velocity Prediction", true);
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", true);
 
     public RodAimbot() {
-        super("RodAimbot", "Predicts player movement to aim fishing rods accurately", Category.COMBAT);
-        addSettings(fov, range, predict);
+        super("RodAimbot", "Predicts target movement to aim fishing rods accurately", Category.COMBAT);
+        addSettings(fov, range, predict, targetMobs);
     }
 
     @Override
@@ -38,7 +42,7 @@ public class RodAimbot extends Module {
         if (held.isEmpty() || !held.is(Items.FISHING_ROD)) return;
         if (!RotationUtil.isPhysicalKeyDown(mc.options.keyUse)) return;
 
-        Player target = getBestTarget();
+        LivingEntity target = getBestTarget();
         if (target == null) return;
 
         double dist = mc.player.distanceTo(target);
@@ -57,15 +61,26 @@ public class RodAimbot extends Module {
         event.setPitch(fixed[1]);
     }
 
-    private Player getBestTarget() {
-        Player best = null;
+    private LivingEntity getBestTarget() {
+        LivingEntity best = null;
         double bestDist = range.getValue();
-        for (Player p : mc.level.players()) {
-            if (p == mc.player || !p.isAlive() || p.isInvisible()) continue;
-            if (AntiBot.isBot(p) || FriendManager.isFriend(p.getName().getString()) || Teams.isTeammate(p)) continue;
-            double dist = mc.player.distanceTo(p);
-            if (dist <= bestDist && RotationUtil.isEntityInFov(p, fov.getValueFloat())) {
-                best = p;
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (!(entity instanceof LivingEntity living) || living == mc.player) continue;
+            if (living instanceof ArmorStand || living.getId() == -1337) continue;
+            if (!living.isAlive() || living.isInvisible()) continue;
+
+            if (living instanceof Player p) {
+                if (AntiBot.isBot(p) || FriendManager.isFriend(p.getName().getString()) || Teams.isTeammate(p)) continue;
+            } else if (!targetMobs.isEnabled()) {
+                continue;
+            }
+
+            double dist = mc.player.distanceTo(living);
+            if (dist <= bestDist && RotationUtil.isEntityInFov(living, fov.getValueFloat())) {
+                if (best instanceof Player && !(living instanceof Player) && dist >= bestDist * 0.75) {
+                    continue;
+                }
+                best = living;
                 bestDist = dist;
             }
         }

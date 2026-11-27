@@ -10,6 +10,7 @@ import dev.taezeem14.cigarette.module.ModuleManager;
 import dev.taezeem14.cigarette.module.impl.client.SelfDestruct;
 import dev.taezeem14.cigarette.module.impl.render.ClickGUIModule;
 import dev.taezeem14.cigarette.module.impl.render.HUD;
+import dev.taezeem14.cigarette.module.impl.render.Keystrokes;
 import dev.taezeem14.cigarette.module.impl.render.TargetHUD;
 import dev.taezeem14.cigarette.setting.Setting;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
@@ -18,12 +19,8 @@ import dev.taezeem14.cigarette.setting.impl.DoubleSliderSetting;
 import dev.taezeem14.cigarette.setting.impl.KeybindSetting;
 import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
-import dev.taezeem14.cigarette.ui.clickgui.CategoryFrame;
 import dev.taezeem14.cigarette.ui.clickgui.ClickGUI;
-import dev.taezeem14.cigarette.util.mapping.MappingResolver;
 import dev.taezeem14.cigarette.util.render.ColorUtil;
-
-import java.util.List;
 
 public class Profile {
 
@@ -86,29 +83,14 @@ public class Profile {
 
         ClickGUI clickGUI = Cigarette.INSTANCE != null ? Cigarette.INSTANCE.getClickGUI() : null;
         if (clickGUI != null) {
-            Float guiScale = MappingResolver.getFieldValue(clickGUI, ClickGUI.class, "guiScale");
-            uiJson.addProperty("guiScale", guiScale != null ? guiScale : 1.0f);
-
-            List<CategoryFrame> frames = MappingResolver.getFieldValue(clickGUI, ClickGUI.class, "frames");
-            if (frames != null) {
-                JsonObject framesJson = new JsonObject();
-                for (CategoryFrame frame : frames) {
-                    JsonObject frameJson = new JsonObject();
-                    frameJson.addProperty("x", frame.getX());
-                    frameJson.addProperty("y", frame.getY());
-                    Boolean collapsed = MappingResolver.getFieldValue(frame, CategoryFrame.class, "collapsed");
-                    frameJson.addProperty("collapsed", Boolean.TRUE.equals(collapsed));
-                    frameJson.addProperty("userMoved", frame.hasUserMoved());
-                    framesJson.add(frame.getCategory().name(), frameJson);
-                }
-                uiJson.add("frames", framesJson);
-            }
+            uiJson.addProperty("guiScale", clickGUI.getGuiScale());
         }
 
         if (moduleManager != null) {
             HUD hud = moduleManager.getModuleByClass(HUD.class);
             TargetHUD targetHud = moduleManager.getModuleByClass(TargetHUD.class);
-            if (hud != null || targetHud != null) {
+            Keystrokes keystrokes = moduleManager.getModuleByClass(Keystrokes.class);
+            if (hud != null || targetHud != null || keystrokes != null) {
                 JsonObject hudJson = new JsonObject();
                 if (hud != null) {
                     hudJson.addProperty("watermarkX", hud.getWatermarkX());
@@ -119,6 +101,10 @@ public class Profile {
                 if (targetHud != null) {
                     hudJson.addProperty("targetHudX", targetHud.getX());
                     hudJson.addProperty("targetHudY", targetHud.getY());
+                }
+                if (keystrokes != null) {
+                    hudJson.addProperty("keystrokesX", keystrokes.getX());
+                    hudJson.addProperty("keystrokesY", keystrokes.getY());
                 }
                 uiJson.add("hud", hudJson);
             }
@@ -264,42 +250,21 @@ public class Profile {
                         targetHud.setY(hudJson.get("targetHudY").getAsFloat());
                     }
                 }
+
+                Keystrokes keystrokes = moduleManager.getModuleByClass(Keystrokes.class);
+                if (keystrokes != null) {
+                    if (hudJson.has("keystrokesX") && hudJson.get("keystrokesX").isJsonPrimitive()) {
+                        keystrokes.setX(hudJson.get("keystrokesX").getAsFloat());
+                    }
+                    if (hudJson.has("keystrokesY") && hudJson.get("keystrokesY").isJsonPrimitive()) {
+                        keystrokes.setY(hudJson.get("keystrokesY").getAsFloat());
+                    }
+                }
             }
 
             ClickGUI clickGUI = Cigarette.INSTANCE != null ? Cigarette.INSTANCE.getClickGUI() : null;
-            if (clickGUI != null) {
-                if (uiJson.has("guiScale") && uiJson.get("guiScale").isJsonPrimitive()) {
-                    float scale = Math.max(0.75f, Math.min(1.5f, uiJson.get("guiScale").getAsFloat()));
-                    MappingResolver.setFieldValue(clickGUI, scale, ClickGUI.class, "guiScale");
-                }
-
-                if (uiJson.has("frames") && uiJson.get("frames").isJsonObject()) {
-                    JsonObject framesJson = uiJson.getAsJsonObject("frames");
-                    List<CategoryFrame> frames = MappingResolver.getFieldValue(clickGUI, ClickGUI.class, "frames");
-                    if (frames != null) {
-                        for (CategoryFrame frame : frames) {
-                            String key = frame.getCategory().name();
-                            if (!framesJson.has(key) || !framesJson.get(key).isJsonObject()) {
-                                continue;
-                            }
-                            JsonObject frameJson = framesJson.getAsJsonObject(key);
-                            if (frameJson.has("x") && frameJson.get("x").isJsonPrimitive()) {
-                                frame.setX(frameJson.get("x").getAsFloat());
-                            }
-                            if (frameJson.has("y") && frameJson.get("y").isJsonPrimitive()) {
-                                frame.setY(frameJson.get("y").getAsFloat());
-                            }
-                            if (frameJson.has("collapsed") && frameJson.get("collapsed").isJsonPrimitive()) {
-                                boolean collapsed = frameJson.get("collapsed").getAsBoolean();
-                                MappingResolver.setFieldValue(frame, collapsed, CategoryFrame.class, "collapsed");
-                                MappingResolver.setFieldValue(frame, collapsed ? 0.0f : 1.0f, CategoryFrame.class, "collapseAnimation");
-                            }
-                            if (frameJson.has("userMoved") && frameJson.get("userMoved").isJsonPrimitive()) {
-                                MappingResolver.setFieldValue(frame, frameJson.get("userMoved").getAsBoolean(), CategoryFrame.class, "userMoved");
-                            }
-                        }
-                    }
-                }
+            if (clickGUI != null && uiJson.has("guiScale") && uiJson.get("guiScale").isJsonPrimitive()) {
+                clickGUI.setGuiScale(uiJson.get("guiScale").getAsFloat());
             }
         }
     }

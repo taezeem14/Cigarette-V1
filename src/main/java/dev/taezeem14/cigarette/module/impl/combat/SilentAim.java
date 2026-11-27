@@ -7,11 +7,14 @@ import dev.taezeem14.cigarette.module.Module;
 import dev.taezeem14.cigarette.module.impl.client.FriendManager;
 import dev.taezeem14.cigarette.module.impl.utility.AntiBot;
 import dev.taezeem14.cigarette.module.impl.utility.Teams;
+import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
 import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.math.RandomUtil;
 import dev.taezeem14.cigarette.util.math.RotationUtil;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.entity.player.EntityPlayer;
 
 public class SilentAim extends Module {
@@ -22,11 +25,12 @@ public class SilentAim extends Module {
     private final NumberSetting fov = new NumberSetting("FOV", 90.0, 15.0, 180.0, 5.0);
     private final NumberSetting distance = new NumberSetting("Distance", 4.2, 3.0, 6.0, 0.1);
     private final NumberSetting hitChance = new NumberSetting("Hit Chance", 100.0, 0.0, 100.0, 1.0);
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", true);
     private final ModeSetting movementFix = new ModeSetting("Movement Fix", "Silent", "Silent", "Strict", "None");
 
     public SilentAim() {
         super("SilentAim", "Silently aims at targets without rotating the client camera", Category.COMBAT);
-        addSettings(fov, distance, hitChance, movementFix);
+        addSettings(fov, distance, hitChance, targetMobs, movementFix);
         instance = this;
     }
 
@@ -56,7 +60,7 @@ public class SilentAim extends Module {
             return;
         }
 
-        EntityPlayer target = getBestTarget();
+        EntityLivingBase target = getBestTarget();
         if (target == null) {
             activeRotations = null;
             return;
@@ -93,42 +97,43 @@ public class SilentAim extends Module {
         return instance != null && instance.isEnabled() && instance.movementFix.is("Strict");
     }
 
-    private EntityPlayer getBestTarget() {
-        EntityPlayer best = null;
+    private EntityLivingBase getBestTarget() {
+        EntityLivingBase best = null;
         double bestDist = distance.getValue();
 
         for (Entity entity : mc.theWorld.loadedEntityList) {
-            if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer) {
+            if (!(entity instanceof EntityLivingBase) || entity == mc.thePlayer) {
                 continue;
             }
 
-            EntityPlayer player = (EntityPlayer) entity;
-            if (player.getEntityId() == -1337 || AntiBot.isBot(player)) {
+            EntityLivingBase living = (EntityLivingBase) entity;
+            if (living.getEntityId() == -1337 || living instanceof EntityArmorStand) {
                 continue;
             }
 
-            if (player.isDead || player.getHealth() <= 0.0F || player.isInvisible()) {
+            if (living.isDead || living.getHealth() <= 0.0F || living.isInvisible()) {
                 continue;
             }
 
-            if (FriendManager.isFriend(player.getName())) {
+            if (living instanceof EntityPlayer) {
+                EntityPlayer player = (EntityPlayer) living;
+                if (AntiBot.isBot(player)) continue;
+                if (FriendManager.isFriend(player.getName())) continue;
+                if (Teams.isTeammate(player)) continue;
+            } else if (!targetMobs.isEnabled()) {
                 continue;
             }
 
-            if (Teams.isTeammate(player)) {
-                continue;
-            }
-
-            double dist = mc.thePlayer.getDistanceToEntity(player);
+            double dist = mc.thePlayer.getDistanceToEntity(living);
             if (dist > bestDist) {
                 continue;
             }
 
-            if (!RotationUtil.isEntityInFov(player, fov.getValueFloat())) {
+            if (!RotationUtil.isEntityInFov(living, fov.getValueFloat())) {
                 continue;
             }
 
-            best = player;
+            best = living;
             bestDist = dist;
         }
 

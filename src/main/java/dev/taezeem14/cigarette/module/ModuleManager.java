@@ -25,6 +25,7 @@ public class ModuleManager {
         // Combat
         register(new AimAssist());
         register(new AutoClicker());
+        register(new Sprint());
         register(new Reach());
         register(new HitBoxes());
         register(new Velocity());
@@ -48,6 +49,9 @@ public class ModuleManager {
         // Utility & World
         register(new Eagle());
         register(new FastPlace());
+        register(new NoFall());
+        register(new SpeedMine());
+        register(new Step());
         register(new ChestStealer());
         register(new InvManager());
         register(new AutoTool());
@@ -64,6 +68,8 @@ public class ModuleManager {
         // Render
         register(new ClickGUIModule());
         register(new HUD());
+        register(new Keystrokes());
+        register(new ArmorHUD());
         register(new ESP());
         register(new Chams());
         register(new Nametags());

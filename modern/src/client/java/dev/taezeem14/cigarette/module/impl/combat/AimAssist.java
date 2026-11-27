@@ -16,10 +16,10 @@ import dev.taezeem14.cigarette.util.render.AnimationUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 public class AimAssist extends Module {
@@ -28,10 +28,10 @@ public class AimAssist extends Module {
     private final NumberSetting verticalSpeed = new NumberSetting("Vertical Speed", 2.0, 1.0, 10.0, 0.1);
     private final NumberSetting fov = new NumberSetting("FOV", 90.0, 15.0, 360.0, 5.0);
     private final NumberSetting distance = new NumberSetting("Distance", 4.5, 3.0, 6.0, 0.1);
-    private final BooleanSetting clickAim = new BooleanSetting("Click Aim", true);
+    private final BooleanSetting clickAim = new BooleanSetting("Click Aim", false);
     private final BooleanSetting weaponOnly = new BooleanSetting("Weapon Only", false);
     private final BooleanSetting targetMobs = new BooleanSetting("Mobs", true);
-    private final BooleanSetting aimVertically = new BooleanSetting("Aim Vertically", false);
+    private final BooleanSetting aimVertically = new BooleanSetting("Aim Vertically", true);
     private final BooleanSetting multipoint = new BooleanSetting("Multipoint Hitbox", true);
     private final BooleanSetting ignoreTeams = new BooleanSetting("Ignore Teams", true);
     private final BooleanSetting breakBlocksCheck = new BooleanSetting("Break Blocks Check", true);
@@ -78,9 +78,8 @@ public class AimAssist extends Module {
             }
         }
 
-        if (breakBlocksCheck.isEnabled() && mc.hitResult != null
-                && mc.hitResult.getType() == HitResult.Type.BLOCK
-                && RotationUtil.isPhysicalKeyDown(mc.options.keyAttack)) {
+        if (breakBlocksCheck.isEnabled() && mc.gameMode != null
+                && mc.gameMode.isDestroying() && mc.crosshairPickEntity == null) {
             pendingYawDelta = 0.0F;
             pendingPitchDelta = 0.0F;
             return;
@@ -137,6 +136,7 @@ public class AimAssist extends Module {
         double bestDist = distance.getValue();
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (!(entity instanceof LivingEntity living) || living == mc.player) continue;
+            if (living instanceof ArmorStand || living.getId() == -1337) continue;
             if (!living.isAlive() || living.isInvisible()) continue;
 
             if (living instanceof Player player) {

@@ -32,7 +32,7 @@ public class CheckboxComponent extends Component {
         int textColor = ColorUtil.interpolateColor(ColorUtil.TEXT_MUTED, ColorUtil.TEXT_PRIMARY, Math.max(animation, hovered ? 0.85f : 0.0f));
         FontUtil.small.drawString(setting.getName(), x + 6.0f, y + (height - FontUtil.small.getHeight()) / 2.0f, textColor);
 
-        // Vape V4 sliding toggle switch
+        // Sliding toggle switch
         float switchW = 19.0f;
         float switchH = 9.5f;
         float switchX = x + width - switchW - 6.0f;

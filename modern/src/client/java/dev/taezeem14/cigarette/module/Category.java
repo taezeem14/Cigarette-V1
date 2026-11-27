@@ -5,6 +5,7 @@ public enum Category {
     BLATANT("Blatant"),
     RENDER("Render"),
     UTILITY("Utility"),
+    WORLD("World"),
     CLIENT("Client");
 
     private final String displayName;

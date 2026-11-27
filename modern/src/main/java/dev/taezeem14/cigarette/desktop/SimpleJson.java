@@ -29,6 +29,21 @@ public final class SimpleJson {
         return new LinkedHashMap<String, Object>();
     }
 
+    @SuppressWarnings("unchecked")
+    public static List<Object> parseArray(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return new ArrayList<Object>();
+        }
+        try {
+            Object v = new Parser(raw).parseValue();
+            if (v instanceof List) {
+                return (List<Object>) v;
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return new ArrayList<Object>();
+    }
+
     public static String stringify(Object value) {
         StringBuilder sb = new StringBuilder(2048);
         writeValue(sb, value, 0);
@@ -225,6 +240,8 @@ public final class SimpleJson {
                     else if (esc == 'u' && pos + 4 <= src.length()) {
                         sb.append((char) Integer.parseInt(src.substring(pos, pos + 4), 16));
                         pos += 4;
+                    } else {
+                        sb.append(esc);
                     }
                 } else {
                     sb.append(c);

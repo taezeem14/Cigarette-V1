@@ -73,23 +73,29 @@ public class HUD extends Module {
 
     private void renderWatermark(GuiGraphicsExtractor g) {
         String brand = "CIGARETTE";
-        String rest = " \u2022 26.3 \u2022 " + mc.getFps() + " FPS \u2022 "
-                + CPSTracker.getLeftCPS() + " | " + CPSTracker.getRightCPS() + " CPS";
+        double bps = 0.0;
+        if (mc.player != null) {
+            double dx = mc.player.getX() - mc.player.xo;
+            double dz = mc.player.getZ() - mc.player.zo;
+            bps = Math.hypot(dx, dz) * 20.0;
+        }
+        String rest = String.format("  v1.4 \u2022 %d FPS \u2022 %d | %d CPS \u2022 %.1f BPS",
+                mc.getFps(), CPSTracker.getLeftCPS(), CPSTracker.getRightCPS(), bps);
 
         int brandW = RenderUtil.getStringWidth(brand);
         float restW = RenderUtil.getSmallStringWidth(rest);
-        float totalW = brandW + restW + 18.0F;
-        float totalH = 19.0F;
+        float totalW = brandW + restW + 26.0F;
+        float totalH = 20.0F;
         int accent = getHUDColor(0);
 
-        RenderUtil.drawDropShadow(g, watermarkX, watermarkY, totalW, totalH, 4.0F, 0x55000000);
-        RenderUtil.drawRoundedRect(g, watermarkX, watermarkY, totalW, totalH, 4.0F, 0xDC141418);
-        RenderUtil.drawRoundedOutline(g, watermarkX, watermarkY, totalW, totalH, 4.0F, 1.0F, ColorUtil.BORDER);
-        RenderUtil.drawRoundedRectTop(g, watermarkX + 1.0F, watermarkY, totalW - 2.0F, 1.5F, 1.5F, ColorUtil.modifyAlpha(accent, 180));
-        RenderUtil.drawRoundedRect(g, watermarkX + 4.0F, watermarkY + 4.5F, 2.0F, totalH - 9.0F, 1.0F, accent);
+        RenderUtil.drawDropShadow(g, watermarkX, watermarkY, totalW, totalH, 4.5F, 0x60000000);
+        RenderUtil.drawRoundedRect(g, watermarkX, watermarkY, totalW, totalH, 4.5F, 0xE2141419);
+        RenderUtil.drawRoundedOutline(g, watermarkX, watermarkY, totalW, totalH, 4.5F, 1.0F, ColorUtil.BORDER);
+        RenderUtil.drawRoundedRectTop(g, watermarkX + 1.0F, watermarkY, totalW - 2.0F, 1.5F, 1.5F, ColorUtil.modifyAlpha(accent, 195));
+        RenderUtil.drawFaIcon(g, "logo", watermarkX + 6.0F, watermarkY + (totalH - 10.0F) / 2.0F, 10.0F, accent);
 
-        RenderUtil.drawText(g, brand, watermarkX + 9.0F, watermarkY + (totalH - RenderUtil.getFontHeight()) / 2.0F + 0.5F, accent, false);
-        RenderUtil.drawSmallText(g, rest, watermarkX + 9.0F + brandW, watermarkY + (totalH - RenderUtil.getSmallFontHeight()) / 2.0F + 0.5F, ColorUtil.TEXT_PRIMARY, false);
+        RenderUtil.drawText(g, brand, watermarkX + 19.0F, watermarkY + (totalH - RenderUtil.getFontHeight()) / 2.0F + 0.5F, accent, false);
+        RenderUtil.drawSmallText(g, rest, watermarkX + 19.0F + brandW, watermarkY + (totalH - RenderUtil.getSmallFontHeight()) / 2.0F + 0.5F, ColorUtil.TEXT_PRIMARY, false);
     }
 
     private void renderArrayList(GuiGraphicsExtractor g, float screenW, ArrayListModule al) {

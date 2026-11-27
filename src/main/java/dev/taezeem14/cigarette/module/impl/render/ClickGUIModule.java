@@ -12,13 +12,12 @@ import org.lwjgl.input.Keyboard;
 public class ClickGUIModule extends Module {
 
     private final BooleanSetting blurBackdrop = new BooleanSetting("Blur Backdrop", true);
-    private final ModeSetting theme = new ModeSetting("Theme", "Electric Blue",
-            "Electric Blue", "Ember Orange", "Amethyst", "Emerald", "Rainbow");
+    private final ModeSetting theme = new ModeSetting("Theme", "Electric Blue", ColorUtil.THEME_PRESETS);
 
     private String lastSyncedTheme = "Electric Blue";
 
     public ClickGUIModule() {
-        super("ClickGUI", "Opens the Vape V4 replica user interface", Category.RENDER, Keyboard.KEY_RSHIFT);
+        super("ClickGUI", "Opens the Cigarette V1 configuration interface", Category.RENDER, Keyboard.KEY_RSHIFT);
         addSettings(blurBackdrop, theme);
         ColorUtil.setThemePreset(theme.getMode());
     }

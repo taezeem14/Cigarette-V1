@@ -78,25 +78,30 @@ public class HUD extends Module {
 
     private void renderWatermark() {
         String brand = "CIGARETTE";
-        String rest = " \u2022 V1 \u2022 " + Minecraft.getDebugFPS() + " FPS \u2022 "
-                + CPSTracker.getLeftCPS() + " | " + CPSTracker.getRightCPS() + " CPS";
+        double bps = 0.0;
+        if (mc.thePlayer != null) {
+            double dx = mc.thePlayer.posX - mc.thePlayer.lastTickPosX;
+            double dz = mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ;
+            bps = Math.hypot(dx, dz) * 20.0;
+        }
+        String rest = String.format("  v1.4 \u2022 %d FPS \u2022 %d | %d CPS \u2022 %.1f BPS",
+                Minecraft.getDebugFPS(), CPSTracker.getLeftCPS(), CPSTracker.getRightCPS(), bps);
 
         int brandW = FontUtil.bold.getStringWidth(brand);
         int restW = FontUtil.small.getStringWidth(rest);
-        float totalW = brandW + restW + 18.0f;
-        float totalH = 19.0f;
+        float totalW = brandW + restW + 26.0f;
+        float totalH = 20.0f;
         int accent = getHUDColor(0);
 
-        RenderUtil.drawDropShadow(watermarkX, watermarkY, totalW, totalH, 4.0f, 0x55000000);
-        RenderUtil.drawRoundedRect(watermarkX, watermarkY, totalW, totalH, 4.0f, 0xDC141418);
-        RenderUtil.drawRoundedOutline(watermarkX, watermarkY, totalW, totalH, 4.0f, 1.0f, ColorUtil.BORDER);
+        RenderUtil.drawDropShadow(watermarkX, watermarkY, totalW, totalH, 4.5f, 0x60000000);
+        RenderUtil.drawRoundedRect(watermarkX, watermarkY, totalW, totalH, 4.5f, 0xE2141419);
+        RenderUtil.drawRoundedOutline(watermarkX, watermarkY, totalW, totalH, 4.5f, 1.0f, ColorUtil.BORDER);
 
-        // Top subtle highlight bar + left accent pill
-        RenderUtil.drawRoundedRectTop(watermarkX + 1.0f, watermarkY, totalW - 2.0f, 1.5f, 1.5f, ColorUtil.modifyAlpha(accent, 180));
-        RenderUtil.drawRoundedRect(watermarkX + 4.0f, watermarkY + 4.5f, 2.0f, totalH - 9.0f, 1.0f, accent);
+        RenderUtil.drawRoundedRectTop(watermarkX + 1.0f, watermarkY, totalW - 2.0f, 1.5f, 1.5f, ColorUtil.modifyAlpha(accent, 195));
+        RenderUtil.drawFaIcon("logo", watermarkX + 6.0f, watermarkY + (totalH - 10.0f) / 2.0f, 10.0f, accent);
 
-        FontUtil.bold.drawString(brand, watermarkX + 9.0f, watermarkY + (totalH - FontUtil.bold.getHeight()) / 2.0f - 0.5f, accent);
-        FontUtil.small.drawString(rest, watermarkX + 9.0f + brandW, watermarkY + (totalH - FontUtil.small.getHeight()) / 2.0f - 0.5f, ColorUtil.TEXT_PRIMARY);
+        FontUtil.bold.drawString(brand, watermarkX + 19.0f, watermarkY + (totalH - FontUtil.bold.getHeight()) / 2.0f - 0.5f, accent);
+        FontUtil.small.drawString(rest, watermarkX + 19.0f + brandW, watermarkY + (totalH - FontUtil.small.getHeight()) / 2.0f - 0.5f, ColorUtil.TEXT_PRIMARY);
     }
 
     private void renderArrayList(float screenW, ArrayListModule al) {

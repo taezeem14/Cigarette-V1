@@ -7,7 +7,6 @@ import org.spongepowered.asm.mixin.Mixins;
 
 import java.util.Map;
 
-@IFMLLoadingPlugin.MCVersion("1.8.9")
 @IFMLLoadingPlugin.Name("Cigarette")
 public class MixinLoader implements IFMLLoadingPlugin {
 

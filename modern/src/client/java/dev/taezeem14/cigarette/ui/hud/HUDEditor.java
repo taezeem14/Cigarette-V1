@@ -3,6 +3,7 @@ package dev.taezeem14.cigarette.ui.hud;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.taezeem14.cigarette.CigaretteModernClient;
 import dev.taezeem14.cigarette.module.impl.render.HUD;
+import dev.taezeem14.cigarette.module.impl.render.Keystrokes;
 import dev.taezeem14.cigarette.module.impl.render.TargetHUD;
 import dev.taezeem14.cigarette.ui.clickgui.ClickGUI;
 import dev.taezeem14.cigarette.util.render.ColorUtil;
@@ -19,6 +20,7 @@ public class HUDEditor extends Screen {
     private boolean draggingWatermark = false;
     private boolean draggingArrayList = false;
     private boolean draggingTargetHUD = false;
+    private boolean draggingKeystrokes = false;
     private float dragX = 0.0F;
     private float dragY = 0.0F;
     private boolean snappedX = false;
@@ -27,7 +29,7 @@ public class HUDEditor extends Screen {
     private float snapLineY = 0.0F;
 
     public HUDEditor() {
-        super(Component.literal("HUD Editor"));
+        super(Component.literal("Cigarette V1 HUD Editor"));
     }
 
     @Override
@@ -46,9 +48,10 @@ public class HUDEditor extends Screen {
 
         HUD hud = getHUD();
         TargetHUD targetHUD = getTargetHUD();
+        Keystrokes keystrokes = getKeystrokes();
 
         if (hud != null) {
-            float wmW = 195.0F;
+            float wmW = 215.0F;
             float wmH = 19.0F;
             if (draggingWatermark) {
                 float[] s = snapPos(mouseX - dragX, mouseY - dragY, wmW, wmH, screenW, screenH);
@@ -59,8 +62,8 @@ public class HUDEditor extends Screen {
             float wmY = hud.getWatermarkY();
             RenderUtil.drawRoundedRect(g, wmX, wmY, wmW, wmH, 4.0F, 0xAA141418);
             RenderUtil.drawRoundedOutline(g, wmX, wmY, wmW, wmH, 4.0F, 1.0F, draggingWatermark ? accent : ColorUtil.modifyAlpha(accent, 170));
-            RenderUtil.drawRoundedRect(g, wmX + 4.0F, wmY + 4.5F, 2.0F, wmH - 9.0F, 1.0F, accent);
-            RenderUtil.drawText(g, "CIGARETTE", wmX + 9.0F, wmY + (wmH - RenderUtil.getFontHeight()) / 2.0F, accent, false);
+            RenderUtil.drawFaIcon(g, "logo", wmX + 6.0F, wmY + 4.5F, 10.0F, accent);
+            RenderUtil.drawText(g, "CIGARETTE v1.4", wmX + 19.0F, wmY + (wmH - RenderUtil.getFontHeight()) / 2.0F, 0xFFFFFFFF, true);
 
             float alW = 96.0F;
             float alH = 74.0F;
@@ -73,9 +76,10 @@ public class HUDEditor extends Screen {
             float alY = hud.getArrayListY();
             RenderUtil.drawRoundedRect(g, alX, alY, alW, alH, 4.0F, 0xAA141418);
             RenderUtil.drawRoundedOutline(g, alX, alY, alW, alH, 4.0F, 1.0F, draggingArrayList ? accent : ColorUtil.modifyAlpha(accent, 170));
-            RenderUtil.drawText(g, "ArrayList", alX + 6.0F, alY + 5.0F, accent, false);
+            RenderUtil.drawText(g, "ArrayList", alX + 6.0F, alY + 5.0F, accent, true);
             RenderUtil.drawSmallText(g, "KillAura \u00a77Switch", alX + 6.0F, alY + 20.0F, ColorUtil.TEXT_PRIMARY, false);
             RenderUtil.drawSmallText(g, "Velocity \u00a77Simple", alX + 6.0F, alY + 32.0F, ColorUtil.TEXT_PRIMARY, false);
+            RenderUtil.drawSmallText(g, "Sprint", alX + 6.0F, alY + 44.0F, ColorUtil.TEXT_PRIMARY, false);
         }
 
         if (targetHUD != null) {
@@ -91,22 +95,37 @@ public class HUDEditor extends Screen {
             RenderUtil.drawRoundedRect(g, thX, thY, thW, thH, 5.0F, 0xAA141418);
             RenderUtil.drawRoundedOutline(g, thX, thY, thW, thH, 5.0F, 1.0F, draggingTargetHUD ? accent : ColorUtil.modifyAlpha(accent, 170));
             RenderUtil.drawRoundedRect(g, thX + 7.0F, thY + 8.0F, 36.0F, 36.0F, 3.0F, 0xFF22222A);
-            RenderUtil.drawText(g, "TargetHUD", thX + 51.0F, thY + 7.0F, ColorUtil.TEXT_PRIMARY, false);
+            RenderUtil.drawText(g, "TargetHUD", thX + 51.0F, thY + 7.0F, ColorUtil.TEXT_PRIMARY, true);
             RenderUtil.drawSmallText(g, "20.0 HP (100%) \u2022 3.2m", thX + 51.0F, thY + 20.0F, ColorUtil.TEXT_MUTED, false);
             RenderUtil.drawRoundedRect(g, thX + 51.0F, thY + thH - 10.0F, (thW - 58.0F) * 0.78F, 4.5F, 2.0F, accent);
+        }
+
+        if (keystrokes != null) {
+            float ksW = keystrokes.getWidth();
+            float ksH = keystrokes.getHeight();
+            if (draggingKeystrokes) {
+                float[] s = snapPos(mouseX - dragX, mouseY - dragY, ksW, ksH, screenW, screenH);
+                keystrokes.setX(s[0]);
+                keystrokes.setY(s[1]);
+            }
+            float ksX = keystrokes.getX();
+            float ksY = keystrokes.getY();
+            RenderUtil.drawRoundedRect(g, ksX, ksY, ksW, ksH, 4.0F, 0x88141418);
+            RenderUtil.drawRoundedOutline(g, ksX, ksY, ksW, ksH, 4.0F, 1.0F, draggingKeystrokes ? accent : ColorUtil.modifyAlpha(accent, 170));
+            RenderUtil.drawCenteredSmallText(g, "Keystrokes", ksX + ksW / 2.0F, ksY + ksH / 2.0F - 4.0F, accent, false);
         }
 
         if (snappedX) RenderUtil.drawRect(g, snapLineX, 0, 1.0F, screenH, ColorUtil.modifyAlpha(accent, 190));
         if (snappedY) RenderUtil.drawRect(g, 0, snapLineY, screenW, 1.0F, ColorUtil.modifyAlpha(accent, 190));
 
-        float bannerW = 300.0F;
+        float bannerW = 310.0F;
         float bannerH = 26.0F;
         float bannerX = (screenW - bannerW) / 2.0F;
         RenderUtil.drawDropShadow(g, bannerX, 12.0F, bannerW, bannerH, 4.0F, 0x66000000);
         RenderUtil.drawRoundedRect(g, bannerX, 12.0F, bannerW, bannerH, 4.0F, ColorUtil.HEADER);
         RenderUtil.drawRoundedOutline(g, bannerX, 12.0F, bannerW, bannerH, 4.0F, 1.0F, ColorUtil.BORDER);
         RenderUtil.drawRoundedRectTop(g, bannerX + 1.0F, 12.0F, bannerW - 2.0F, 1.5F, 1.5F, accent);
-        RenderUtil.drawCenteredText(g, "HUD Editor - Drag elements cleanly", screenW / 2.0F, 12.0F + (bannerH - RenderUtil.getFontHeight()) / 2.0F, ColorUtil.TEXT_PRIMARY, false);
+        RenderUtil.drawCenteredText(g, "Cigarette V1 HUD Editor - Drag & Snap", screenW / 2.0F, 12.0F + (bannerH - RenderUtil.getFontHeight()) / 2.0F, ColorUtil.TEXT_PRIMARY, true);
         RenderUtil.drawCenteredSmallText(g, "Press ESC or Right Click to Return to ClickGUI", screenW / 2.0F, screenH - 20.0F, ColorUtil.TEXT_MUTED, false);
     }
 
@@ -140,7 +159,7 @@ public class HUDEditor extends Screen {
         }
         HUD hud = getHUD();
         if (hud != null) {
-            if (mx >= hud.getWatermarkX() && mx <= hud.getWatermarkX() + 195.0F && my >= hud.getWatermarkY() && my <= hud.getWatermarkY() + 19.0F) {
+            if (mx >= hud.getWatermarkX() && mx <= hud.getWatermarkX() + 215.0F && my >= hud.getWatermarkY() && my <= hud.getWatermarkY() + 19.0F) {
                 draggingWatermark = true;
                 dragX = mx - hud.getWatermarkX();
                 dragY = my - hud.getWatermarkY();
@@ -160,6 +179,13 @@ public class HUDEditor extends Screen {
             dragY = my - th.getY();
             return true;
         }
+        Keystrokes ks = getKeystrokes();
+        if (ks != null && mx >= ks.getX() && mx <= ks.getX() + ks.getWidth() && my >= ks.getY() && my <= ks.getY() + ks.getHeight()) {
+            draggingKeystrokes = true;
+            dragX = mx - ks.getX();
+            dragY = my - ks.getY();
+            return true;
+        }
         return false;
     }
 
@@ -168,6 +194,7 @@ public class HUDEditor extends Screen {
         draggingWatermark = false;
         draggingArrayList = false;
         draggingTargetHUD = false;
+        draggingKeystrokes = false;
         return super.mouseReleased(event);
     }
 
@@ -191,5 +218,10 @@ public class HUDEditor extends Screen {
     private TargetHUD getTargetHUD() {
         return CigaretteModernClient.getInstance() != null && CigaretteModernClient.getInstance().getModuleManager() != null
                 ? CigaretteModernClient.getInstance().getModuleManager().getModuleByClass(TargetHUD.class) : null;
+    }
+
+    private Keystrokes getKeystrokes() {
+        return CigaretteModernClient.getInstance() != null && CigaretteModernClient.getInstance().getModuleManager() != null
+                ? CigaretteModernClient.getInstance().getModuleManager().getModuleByClass(Keystrokes.class) : null;
     }
 }

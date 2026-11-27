@@ -16,10 +16,11 @@ import dev.taezeem14.cigarette.util.math.RotationUtil;
 import dev.taezeem14.cigarette.util.math.TimerUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.monster.EntityMob;
-import net.minecraft.entity.monster.EntitySlime;
-import net.minecraft.entity.passive.EntityAnimal;
+import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemAxe;
+import net.minecraft.item.ItemPickaxe;
+import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
@@ -39,6 +40,7 @@ public class KillAura extends Module {
 
     private final ModeSetting targetMode = new ModeSetting("Target Mode", "Single", "Single", "Switch", "Multi");
     private final ModeSetting sortMode = new ModeSetting("Sort Mode", "Distance", "Distance", "Health", "HurtTime", "FOV");
+    private final BooleanSetting cooldown19 = new BooleanSetting("1.9+ Cooldown", false);
     private final DoubleSliderSetting aps = new DoubleSliderSetting("APS", 10.0, 14.0, 1.0, 20.0, 0.5);
     private final NumberSetting attackRange = new NumberSetting("Attack Range", 4.2, 3.0, 6.0, 0.1);
     private final NumberSetting swingRange = new NumberSetting("Swing Range", 4.5, 3.0, 6.0, 0.1);
@@ -53,11 +55,12 @@ public class KillAura extends Module {
     private final TimerUtil switchTimer = new TimerUtil();
     private EntityLivingBase currentTarget;
     private long nextAttackDelay = 100L;
+    private long cooldownJitterMs = 8L;
     private boolean blocking = false;
 
     public KillAura() {
         super("KillAura", "Automatically attacks hostile entities within range", Category.BLATANT);
-        addSettings(targetMode, sortMode, aps, attackRange, swingRange, autoBlockMode, rotations, keepSprint,
+        addSettings(targetMode, sortMode, cooldown19, aps, attackRange, swingRange, autoBlockMode, rotations, keepSprint,
                 targetPlayers, targetMobs, targetInvisibles);
         instance = this;
     }
@@ -162,21 +165,22 @@ public class KillAura extends Module {
             event.setYaw(newYaw);
             event.setPitch(newPitch);
 
-            // AutoBlock handling (Unblock before hit if Interact)
-            if (canAutoBlock() && autoBlockMode.is("Interact") && blocking) {
+            // AutoBlock handling (Unblock before hit if Interact, or if 1.9+ Cooldown disables blocking)
+            if (blocking && (!canAutoBlock() || autoBlockMode.is("Interact"))) {
                 stopBlocking();
             }
 
             // Attack handling (AttackEvent is dispatched by MixinPlayerControllerMP.attackEntity)
-            if (attackTimer.hasTimeElapsed(nextAttackDelay)) {
-                if (targetMode.is("Multi")) {
+            long effectiveDelay = getEffectiveAttackDelay();
+            if (attackTimer.hasTimeElapsed(effectiveDelay)) {
+                if (targetMode.is("Multi") && !cooldown19.isEnabled()) {
                     for (EntityLivingBase target : targets) {
                         attack(target);
                     }
                 } else {
                     attack(currentTarget);
                 }
-                advanceAttackTimer();
+                advanceAttackTimer(effectiveDelay);
                 calculateNextDelay();
             }
         } else if (event.isPost()) {
@@ -222,7 +226,7 @@ public class KillAura extends Module {
     }
 
     private boolean canAutoBlock() {
-        if (mc.thePlayer == null) return false;
+        if (mc.thePlayer == null || cooldown19.isEnabled()) return false;
         ItemStack held = mc.thePlayer.getHeldItem();
         return held != null && held.getItem() instanceof ItemSword && !autoBlockMode.is("None");
     }
@@ -233,7 +237,7 @@ public class KillAura extends Module {
 
         for (Entity entity : mc.theWorld.loadedEntityList) {
             if (!(entity instanceof EntityLivingBase) || entity == mc.thePlayer) continue;
-            if (entity.getEntityId() == -1337) continue;
+            if (entity.getEntityId() == -1337 || entity instanceof EntityArmorStand) continue;
 
             EntityLivingBase living = (EntityLivingBase) entity;
             if (living.isDead || living.getHealth() <= 0.0F) continue;
@@ -245,10 +249,8 @@ public class KillAura extends Module {
                 if (AntiBot.isBot(player)) continue;
                 if (FriendManager.isFriend(player.getName())) continue;
                 if (Teams.isTeammate(player)) continue;
-            } else if (living instanceof EntityMob || living instanceof EntitySlime || living instanceof EntityAnimal) {
-                if (!targetMobs.isEnabled()) continue;
             } else {
-                continue;
+                if (!targetMobs.isEnabled()) continue;
             }
 
             double dist = Math.min(mc.thePlayer.getDistanceToEntity(living), RotationUtil.getDistanceToEntityHitbox(living));
@@ -275,10 +277,28 @@ public class KillAura extends Module {
         return list;
     }
 
-    private void advanceAttackTimer() {
+    private long getEffectiveAttackDelay() {
+        if (!cooldown19.isEnabled()) {
+            return nextAttackDelay;
+        }
+        ItemStack held = mc.thePlayer != null ? mc.thePlayer.getHeldItem() : null;
+        long base;
+        if (held != null && held.getItem() instanceof ItemSword) {
+            base = 625L;
+        } else if (held != null && held.getItem() instanceof ItemAxe) {
+            base = 1000L;
+        } else if (held != null && (held.getItem() instanceof ItemSpade || held.getItem() instanceof ItemPickaxe)) {
+            base = 850L;
+        } else {
+            base = 250L;
+        }
+        return base + cooldownJitterMs;
+    }
+
+    private void advanceAttackTimer(long delayUsed) {
         long now = System.currentTimeMillis();
-        long nextLast = attackTimer.getLastMS() + nextAttackDelay;
-        if (now - nextLast > Math.max(100L, nextAttackDelay * 2L)) {
+        long nextLast = attackTimer.getLastMS() + delayUsed;
+        if (now - nextLast > Math.max(100L, delayUsed * 2L)) {
             attackTimer.setTime(now);
         } else {
             attackTimer.setTime(nextLast);
@@ -286,6 +306,7 @@ public class KillAura extends Module {
     }
 
     private void calculateNextDelay() {
+        cooldownJitterMs = RandomUtil.nextInt(0, 25);
         double min = aps.getValueMin();
         double max = aps.getValueMax();
         double mean = (min + max) / 2.0;

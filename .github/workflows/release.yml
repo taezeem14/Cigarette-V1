@@ -74,16 +74,16 @@ jobs:
           body: |
             # Cigarette V1 — Production Release `${{ github.ref_name }}`
 
-            High-Performance Open-Source Hybrid Ghost & Utility Client modeled after Vape V4.
+            High-Performance Open-Source Hybrid & Utility Client for **Minecraft 1.8.x – 26.x**.
 
             ### Downloads
-            - **`Cigarette-V1-*-mc1.8.9-forge.jar`** — Legacy PvP Edition for **Minecraft 1.8.9 (Forge 11.15.1.2318)** on Java 8 (also works on `1.7`–`26.x` servers when paired with **ViaForge 4.4.0+4+1.8.9**).
-            - **`Cigarette-V1-*-mc26.3-fabric.jar`** — Modern Native Edition for **Minecraft 26.3 (Fabric Loader 0.20.1+ & Fabric API)** on Java 25 (also works on `1.8`–`26.2` servers when paired with **ViaFabricPlus**).
+            - **`Cigarette-V1-*-mc1.8.9-forge.jar`** — Classic Forge Edition for **Minecraft 1.8.x / 1.8.9** on Java 8 (joins **every server `1.8` – `1.21.x` – `26.x`** via **ViaForge** + 1-click installer inside the Desktop Launcher GUI!).
+            - **`Cigarette-V1-*-mc26.3-fabric.jar`** — Modern Fabric Edition for **Minecraft 1.21+ / 26.3** on Java 25 (joins **every server `1.8` – `26.x`** via **ViaFabricPlus**).
 
             ### Highlights
-            - **Vape V4 Replica UI:** `#141416` dark aesthetic, draggable multi-panel ClickGUI (`Right Shift`), scissor-clipped drawers, Profiles, Search, HUD Editor, and custom accent themes
-            - **Ghost, Blatant & Utility Suite:** 41 modules across Combat, Blatant, Utility, Render, and Client categories with JSON profile persistence (`.minecraft/cigarette/profiles/` and `.minecraft/Cigarette/profiles/`)
-            - **Works on Official & Offline/Cracked Launchers:** Official Launcher, Prism Launcher, MultiMC, TLauncher, SKLauncher
+            - **Cigarette V1 Signature UI:** Sleek `#141418` 2-column ClickGUI (`Right Shift`), live cross-category search bar, auto-fit viewport scaling, 3-dot module drawers with trackpad-friendly keybinds, HUD Editor, Keystrokes, ArmorHUD, and 7 custom accent presets
+            - **Modernized Desktop Launcher & Companion GUI:** Double-click either JAR to launch the dark rounded companion app with SystemTray background mode, 1-click Launcher starter, 1-click ViaForge/ViaFabricPlus multi-version installer, and real interactive module slider/mode/keybind sync
+            - **47 Real Working Modules Across All 6 Categories:** Combat (10), Blatant (10), Render (12), Utility (5), World (7), and Client (3) — tested across Singleplayer, Multiplayer, OptiFine, and `1.9+` Cooldown servers
 
             ---
             *Crafted by [taezeem14](https://github.com/taezeem14) (Muhammad Taezeem Tariq).*

@@ -15,6 +15,8 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -27,6 +29,7 @@ public class Nametags extends Module {
 
     private static final DecimalFormat HP_FORMAT = new DecimalFormat("0.#");
 
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", false);
     private final BooleanSetting showDistance = new BooleanSetting("Distance", true);
     private final BooleanSetting showHealth = new BooleanSetting("Health", true);
     private final BooleanSetting showItems = new BooleanSetting("Armor & Items", true);
@@ -34,14 +37,25 @@ public class Nametags extends Module {
 
     public Nametags() {
         super("Nametags", "Distance-scaled custom 2D nametags with gear and health", Category.RENDER);
-        addSettings(showDistance, showHealth, showItems, scaleFactor);
+        addSettings(targetMobs, showDistance, showHealth, showItems, scaleFactor);
     }
 
     public static boolean shouldCancelVanillaNametag(Entity entity) {
-        if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer) return false;
+        if (!(entity instanceof EntityLivingBase) || entity == mc.thePlayer || entity instanceof EntityArmorStand) {
+            return false;
+        }
+        if (entity.getEntityId() == -1337) {
+            return false;
+        }
         if (Cigarette.INSTANCE != null && Cigarette.INSTANCE.getModuleManager() != null) {
             Nametags nametags = Cigarette.INSTANCE.getModuleManager().getModuleByClass(Nametags.class);
-            return nametags != null && nametags.isEnabled();
+            if (nametags == null || !nametags.isEnabled()) {
+                return false;
+            }
+            if (entity instanceof EntityPlayer) {
+                return !AntiBot.isBot(entity);
+            }
+            return nametags.targetMobs.isEnabled();
         }
         return false;
     }
@@ -54,15 +68,24 @@ public class Nametags extends Module {
         RenderManager rm = mc.getRenderManager();
         float partialTicks = event.getPartialTicks();
 
-        for (EntityPlayer player : mc.theWorld.playerEntities) {
-            if (player == mc.thePlayer || player.isDead) continue;
-            if (player.getEntityId() == -1337 || AntiBot.isBot(player)) continue;
+        for (Entity entity : mc.theWorld.loadedEntityList) {
+            if (!(entity instanceof EntityLivingBase) || entity == mc.thePlayer || entity.isDead) continue;
+            if (entity.getEntityId() == -1337 || entity instanceof EntityArmorStand) continue;
 
-            double x = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks - rm.viewerPosX;
-            double y = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks - rm.viewerPosY + player.height + 0.55;
-            double z = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks - rm.viewerPosZ;
+            EntityLivingBase living = (EntityLivingBase) entity;
+            if (living.getHealth() <= 0.0f) continue;
 
-            float distance = mc.thePlayer.getDistanceToEntity(player);
+            if (living instanceof EntityPlayer) {
+                if (AntiBot.isBot(living)) continue;
+            } else {
+                if (!targetMobs.isEnabled()) continue;
+            }
+
+            double x = living.lastTickPosX + (living.posX - living.lastTickPosX) * partialTicks - rm.viewerPosX;
+            double y = living.lastTickPosY + (living.posY - living.lastTickPosY) * partialTicks - rm.viewerPosY + living.height + 0.55;
+            double z = living.lastTickPosZ + (living.posZ - living.lastTickPosZ) * partialTicks - rm.viewerPosZ;
+
+            float distance = mc.thePlayer.getDistanceToEntity(living);
             float scale = Math.max(distance / 50.0f, 1.0f) * (scaleFactor.getValueFloat() * 0.015f);
 
             GlStateManager.pushMatrix();
@@ -81,11 +104,11 @@ public class Nametags extends Module {
 
                 StringBuilder text = new StringBuilder();
                 if (showDistance.isEnabled()) {
-                    text.append("\u00a77[").append((int) distance).append("m] ");
+                    text.append("\u00a77[").append((int) distance).append("m] \u00a7r");
                 }
-                text.append(player.getName());
+                text.append(living.getName());
                 if (showHealth.isEnabled()) {
-                    float hp = player.getHealth() + player.getAbsorptionAmount();
+                    float hp = living.getHealth() + living.getAbsorptionAmount();
                     text.append(" \u00a7f[").append(HP_FORMAT.format(hp)).append("]");
                 }
 
@@ -102,9 +125,9 @@ public class Nametags extends Module {
 
                 // Health color bar under tag
                 if (showHealth.isEnabled()) {
-                    float maxHp = Math.max(1.0f, player.getMaxHealth());
-                    int hpCol = ColorUtil.getHealthColor(player.getHealth(), maxHp);
-                    float hpRatio = Math.max(0.0f, Math.min(1.0f, player.getHealth() / maxHp));
+                    float maxHp = Math.max(1.0f, living.getMaxHealth());
+                    int hpCol = ColorUtil.getHealthColor(living.getHealth(), maxHp);
+                    float hpRatio = Math.max(0.0f, Math.min(1.0f, living.getHealth() / maxHp));
                     RenderUtil.drawRect(tagX + 1.0f, tagY + tagH - 1.5f, (tagW - 2.0f) * hpRatio, 1.5f, hpCol);
                 }
 
@@ -114,7 +137,7 @@ public class Nametags extends Module {
                 FontUtil.regular.drawStringWithShadow(tagStr, tagX + 5.0f, tagY + (tagH - FontUtil.regular.getHeight()) / 2.0f - 0.5f, ColorUtil.TEXT_PRIMARY);
 
                 if (showItems.isEnabled()) {
-                    renderEquipment(player, tagY);
+                    renderEquipment(living, tagY);
                 }
             } finally {
                 GlStateManager.enableDepth();
@@ -127,15 +150,25 @@ public class Nametags extends Module {
         }
     }
 
-    private void renderEquipment(EntityPlayer player, float tagY) {
+    private void renderEquipment(EntityLivingBase living, float tagY) {
         List<ItemStack> items = new ArrayList<>();
-        if (player.getCurrentEquippedItem() != null) {
-            items.add(player.getCurrentEquippedItem());
+        if (living.getHeldItem() != null) {
+            items.add(living.getHeldItem());
         }
-        for (int i = 3; i >= 0; i--) {
-            ItemStack stack = player.inventory.armorInventory[i];
-            if (stack != null) {
-                items.add(stack);
+        if (living instanceof EntityPlayer) {
+            EntityPlayer player = (EntityPlayer) living;
+            for (int i = 3; i >= 0; i--) {
+                ItemStack stack = player.inventory.armorInventory[i];
+                if (stack != null) {
+                    items.add(stack);
+                }
+            }
+        } else {
+            for (int i = 4; i >= 1; i--) {
+                ItemStack stack = living.getEquipmentInSlot(i);
+                if (stack != null) {
+                    items.add(stack);
+                }
             }
         }
 

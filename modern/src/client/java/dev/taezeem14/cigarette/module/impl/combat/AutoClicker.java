@@ -26,10 +26,11 @@ public class AutoClicker extends Module {
 
     private final DoubleSliderSetting leftCps = new DoubleSliderSetting("Left CPS", 11.5, 14.5, 1.0, 20.0, 0.1);
     private final DoubleSliderSetting rightCps = new DoubleSliderSetting("Right CPS", 14.0, 18.0, 1.0, 20.0, 0.1);
+    private final BooleanSetting respectCooldown = new BooleanSetting("1.9+ Cooldown", false);
     private final BooleanSetting blockHit = new BooleanSetting("BlockHit", true);
     private final NumberSetting blockHitChance = new NumberSetting("BlockHit Chance", 35.0, 0.0, 100.0, 5.0);
     private final NumberSetting jitterStrength = new NumberSetting("Jitter Strength", 0.0, 0.0, 2.0, 0.1);
-    private final BooleanSetting weaponOnly = new BooleanSetting("Weapon Only", true);
+    private final BooleanSetting weaponOnly = new BooleanSetting("Weapon Only", false);
     private final BooleanSetting breakBlocks = new BooleanSetting("Break Blocks", true);
 
     private final TimerUtil leftTimer = new TimerUtil();
@@ -46,7 +47,7 @@ public class AutoClicker extends Module {
 
     public AutoClicker() {
         super("AutoClicker", "Automates mouse clicks with humanized Gaussian delays", Category.COMBAT);
-        addSettings(leftCps, rightCps, blockHit, blockHitChance, jitterStrength, weaponOnly, breakBlocks);
+        addSettings(leftCps, rightCps, respectCooldown, blockHit, blockHitChance, jitterStrength, weaponOnly, breakBlocks);
         instance = this;
     }
 
@@ -96,13 +97,16 @@ public class AutoClicker extends Module {
             if (weaponOnly.isEnabled() && !InventoryUtil.isWeapon(mc.player.getMainHandItem())) {
                 allowLeft = false;
             }
-            if (allowLeft && breakBlocks.isEnabled() && mc.hitResult != null
-                    && mc.hitResult.getType() == HitResult.Type.BLOCK) {
+            if (allowLeft && breakBlocks.isEnabled() && mc.crosshairPickEntity == null
+                    && mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK) {
                 InputConstants.Key attackKey = KeyMappingHelper.getBoundKeyOf(mc.options.keyAttack);
                 KeyMapping.set(attackKey, true);
                 allowLeft = false;
             }
-            if (allowLeft && leftTimer.hasTimeElapsed(nextLeftDelay)) {
+            if (allowLeft && respectCooldown.isEnabled() && mc.player.getAttackStrengthScale(0.5F) < 0.92F) {
+                allowLeft = false;
+            }
+            if (allowLeft && (respectCooldown.isEnabled() || leftTimer.hasTimeElapsed(nextLeftDelay))) {
                 InputConstants.Key attackKey = KeyMappingHelper.getBoundKeyOf(mc.options.keyAttack);
                 KeyMapping.set(attackKey, true);
                 KeyMapping.click(attackKey);

@@ -3,6 +3,7 @@ package dev.taezeem14.cigarette.module.impl.combat;
 import dev.taezeem14.cigarette.event.EventTarget;
 import dev.taezeem14.cigarette.event.impl.Render3DEvent;
 import dev.taezeem14.cigarette.event.impl.TickEvent;
+import dev.taezeem14.cigarette.forge.ForgeEventBridge;
 import dev.taezeem14.cigarette.module.Category;
 import dev.taezeem14.cigarette.module.Module;
 import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
@@ -12,12 +13,19 @@ import dev.taezeem14.cigarette.util.mapping.MappingResolver;
 import dev.taezeem14.cigarette.util.math.RandomUtil;
 import dev.taezeem14.cigarette.util.math.RotationUtil;
 import dev.taezeem14.cigarette.util.math.TimerUtil;
+import dev.taezeem14.cigarette.util.player.CPSTracker;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemAxe;
+import net.minecraft.item.ItemBow;
+import net.minecraft.item.ItemFood;
+import net.minecraft.item.ItemPickaxe;
+import net.minecraft.item.ItemPotion;
+import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.util.MathHelper;
@@ -29,10 +37,11 @@ public class AutoClicker extends Module {
 
     private final DoubleSliderSetting leftCps = new DoubleSliderSetting("Left CPS", 11.5, 14.5, 1.0, 20.0, 0.1);
     private final DoubleSliderSetting rightCps = new DoubleSliderSetting("Right CPS", 14.0, 18.0, 1.0, 20.0, 0.1);
+    private final BooleanSetting cooldown19 = new BooleanSetting("1.9+ Cooldown", false);
     private final BooleanSetting blockHit = new BooleanSetting("BlockHit", true);
     private final NumberSetting blockHitChance = new NumberSetting("BlockHit Chance", 35.0, 0.0, 100.0, 5.0);
     private final NumberSetting jitterStrength = new NumberSetting("Jitter Strength", 0.0, 0.0, 2.0, 0.1);
-    private final BooleanSetting weaponOnly = new BooleanSetting("Weapon Only", true);
+    private final BooleanSetting weaponOnly = new BooleanSetting("Weapon Only", false);
     private final BooleanSetting breakBlocks = new BooleanSetting("Break Blocks", true);
     private final BooleanSetting inventoryFill = new BooleanSetting("Inventory Fill", false);
 
@@ -40,6 +49,7 @@ public class AutoClicker extends Module {
     private final TimerUtil rightTimer = new TimerUtil();
     private long nextLeftDelay = 80L;
     private long nextRightDelay = 65L;
+    private long cooldownJitterMs = 8L;
 
     private boolean leftClickHeld = false;
     private long leftReleaseTime = 0L;
@@ -47,14 +57,18 @@ public class AutoClicker extends Module {
     private long rightReleaseTime = 0L;
     private boolean blockHitHeld = false;
     private long blockHitReleaseTime = 0L;
+    private boolean miningBlock = false;
 
     public AutoClicker() {
         super("AutoClicker", "Automates mouse clicks with humanized Gaussian delays", Category.COMBAT);
-        addSettings(leftCps, rightCps, blockHit, blockHitChance, jitterStrength, weaponOnly, breakBlocks, inventoryFill);
+        addSettings(leftCps, rightCps, cooldown19, blockHit, blockHitChance, jitterStrength, weaponOnly, breakBlocks, inventoryFill);
     }
 
     @Override
     public String getSuffix() {
+        if (cooldown19.isEnabled()) {
+            return "1.9+";
+        }
         return String.format("%.1f-%.1f", leftCps.getValueMin(), leftCps.getValueMax());
     }
 
@@ -67,6 +81,7 @@ public class AutoClicker extends Module {
         leftClickHeld = false;
         rightClickHeld = false;
         blockHitHeld = false;
+        miningBlock = false;
     }
 
     @Override
@@ -112,28 +127,36 @@ public class AutoClicker extends Module {
         // Left click handling using physical key state
         if (RotationUtil.isPhysicalKeyDown(attackKey)) {
             boolean allowLeft = true;
+            ItemStack held = mc.thePlayer.getHeldItem();
 
             if (weaponOnly.isEnabled()) {
-                ItemStack held = mc.thePlayer.getHeldItem();
                 if (held == null || !(held.getItem() instanceof ItemSword || held.getItem() instanceof ItemAxe)) {
                     allowLeft = false;
                 }
             }
 
-            if (allowLeft && breakBlocks.isEnabled() && mc.objectMouseOver != null
-                    && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
+            boolean holdingSword = held != null && held.getItem() instanceof ItemSword;
+            if (allowLeft && breakBlocks.isEnabled()
+                    && mc.pointedEntity == null
+                    && mc.objectMouseOver != null
+                    && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK
+                    && !holdingSword) {
                 KeyBinding.setKeyBindState(attackKey, true);
+                miningBlock = true;
                 allowLeft = false;
+            } else if (miningBlock) {
+                KeyBinding.setKeyBindState(attackKey, false);
+                miningBlock = false;
             }
 
-            if (allowLeft && leftTimer.hasTimeElapsed(nextLeftDelay)) {
+            long effectiveLeftDelay = getEffectiveLeftDelay();
+            if (allowLeft && leftTimer.hasTimeElapsed(effectiveLeftDelay)) {
                 performLeftClick(now);
-                advanceTimer(leftTimer, nextLeftDelay);
+                advanceTimer(leftTimer, effectiveLeftDelay);
                 calculateNextLeftDelay();
 
-                // Blockhit logic
-                if (blockHit.isEnabled() && mc.thePlayer.getHeldItem() != null
-                        && mc.thePlayer.getHeldItem().getItem() instanceof ItemSword
+                // Blockhit logic (1.8 PvP only — skipped when 1.9+ Cooldown is active)
+                if (!cooldown19.isEnabled() && blockHit.isEnabled() && holdingSword
                         && RandomUtil.chance(blockHitChance.getValue())) {
                     KeyBinding.setKeyBindState(useKey, true);
                     KeyBinding.onTick(useKey);
@@ -150,14 +173,15 @@ public class AutoClicker extends Module {
                     mc.thePlayer.rotationPitch = MathHelper.clamp_float(mc.thePlayer.rotationPitch + jitterPitch, -90.0F, 90.0F);
                 }
             }
-        } else if (leftClickHeld) {
+        } else if (leftClickHeld || miningBlock) {
             KeyBinding.setKeyBindState(attackKey, false);
             leftClickHeld = false;
+            miningBlock = false;
         }
 
         // Right click handling using physical key state
         if (RotationUtil.isPhysicalKeyDown(useKey)) {
-            if (rightTimer.hasTimeElapsed(nextRightDelay)) {
+            if (!isHoldingContinuousUseItem() && rightTimer.hasTimeElapsed(nextRightDelay)) {
                 performRightClick(now);
                 advanceTimer(rightTimer, nextRightDelay);
                 calculateNextRightDelay();
@@ -168,30 +192,86 @@ public class AutoClicker extends Module {
         }
     }
 
+    private boolean isHoldingContinuousUseItem() {
+        if (mc.thePlayer == null || !mc.thePlayer.isUsingItem()) {
+            return false;
+        }
+        ItemStack held = mc.thePlayer.getHeldItem();
+        if (held == null) {
+            return false;
+        }
+        if (held.getItem() instanceof ItemFood || held.getItem() instanceof ItemBow || held.getItem() instanceof ItemSword) {
+            return true;
+        }
+        return held.getItem() instanceof ItemPotion && !ItemPotion.isSplash(held.getMetadata());
+    }
+
+    private long getEffectiveLeftDelay() {
+        if (!cooldown19.isEnabled()) {
+            return nextLeftDelay;
+        }
+        ItemStack held = mc.thePlayer != null ? mc.thePlayer.getHeldItem() : null;
+        long base;
+        if (held != null && held.getItem() instanceof ItemSword) {
+            base = 625L;
+        } else if (held != null && held.getItem() instanceof ItemAxe) {
+            base = 1000L;
+        } else if (held != null && (held.getItem() instanceof ItemPickaxe || held.getItem() instanceof ItemSpade)) {
+            base = 850L;
+        } else {
+            base = 250L;
+        }
+        return base + cooldownJitterMs;
+    }
+
     private void performLeftClick(long now) {
         try {
-            MappingResolver.setFieldValue(mc, 0, mc.getClass(), MappingResolver.MINECRAFT_LEFT_CLICK_COUNTER);
+            MappingResolver.setFieldValue(mc, 0, Minecraft.class, MappingResolver.MINECRAFT_LEFT_CLICK_COUNTER);
         } catch (Exception ignored) {
         }
 
         int key = mc.gameSettings.keyBindAttack.getKeyCode();
         KeyBinding.setKeyBindState(key, true);
-        KeyBinding.onTick(key);
         leftClickHeld = true;
         leftReleaseTime = now + RandomUtil.nextInt(15, 35);
+
+        if (mc.currentScreen == null) {
+            try {
+                MappingResolver.getMethod(Minecraft.class, new Class<?>[0], MappingResolver.MINECRAFT_CLICK_MOUSE);
+                MappingResolver.invokeMethod(mc, Minecraft.class, new Class<?>[0], new Object[0], MappingResolver.MINECRAFT_CLICK_MOUSE);
+                if ((now - ForgeEventBridge.lastMixinTickTime) >= 80L) {
+                    CPSTracker.recordLeftClick();
+                }
+            } catch (Throwable fallback) {
+                KeyBinding.onTick(key);
+                CPSTracker.recordLeftClick();
+            }
+        }
     }
 
     private void performRightClick(long now) {
         try {
-            MappingResolver.setFieldValue(mc, 0, mc.getClass(), MappingResolver.MINECRAFT_RIGHT_CLICK_DELAY_TIMER);
+            MappingResolver.setFieldValue(mc, 0, Minecraft.class, MappingResolver.MINECRAFT_RIGHT_CLICK_DELAY_TIMER);
         } catch (Exception ignored) {
         }
 
         int key = mc.gameSettings.keyBindUseItem.getKeyCode();
         KeyBinding.setKeyBindState(key, true);
-        KeyBinding.onTick(key);
         rightClickHeld = true;
         rightReleaseTime = now + RandomUtil.nextInt(15, 35);
+
+        if (mc.currentScreen == null) {
+            try {
+                MappingResolver.getMethod(Minecraft.class, new Class<?>[0], MappingResolver.MINECRAFT_RIGHT_CLICK_MOUSE);
+                MappingResolver.invokeMethod(mc, Minecraft.class, new Class<?>[0], new Object[0], MappingResolver.MINECRAFT_RIGHT_CLICK_MOUSE);
+                if ((now - ForgeEventBridge.lastMixinTickTime) >= 80L) {
+                    CPSTracker.recordRightClick();
+                }
+            } catch (Throwable fallback) {
+                KeyBinding.onTick(key);
+                CPSTracker.recordRightClick();
+            }
+        }
     }
 
     private void updateScheduledReleases(long now) {
@@ -221,13 +301,15 @@ public class AutoClicker extends Module {
             leftClickHeld = false;
             rightClickHeld = false;
             blockHitHeld = false;
+            miningBlock = false;
             return;
         }
 
-        if (leftClickHeld) {
+        if (leftClickHeld || miningBlock) {
             int attackKey = mc.gameSettings.keyBindAttack.getKeyCode();
             KeyBinding.setKeyBindState(attackKey, RotationUtil.isPhysicalKeyDown(attackKey));
             leftClickHeld = false;
+            miningBlock = false;
         }
 
         if (rightClickHeld || blockHitHeld) {
@@ -294,6 +376,7 @@ public class AutoClicker extends Module {
     }
 
     private void calculateNextLeftDelay() {
+        cooldownJitterMs = Math.max(0L, Math.min(25L, Math.round(RandomUtil.nextGaussian(8.0, 5.0))));
         double min = leftCps.getValueMin();
         double max = leftCps.getValueMax();
         double mean = (min + max) / 2.0;

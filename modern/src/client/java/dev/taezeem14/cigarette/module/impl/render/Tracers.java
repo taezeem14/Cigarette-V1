@@ -11,19 +11,24 @@ import dev.taezeem14.cigarette.setting.impl.ColorSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.render.ColorUtil;
 import net.minecraft.gizmos.Gizmos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 public class Tracers extends Module {
 
+    private final BooleanSetting players = new BooleanSetting("Players", true);
+    private final BooleanSetting mobs = new BooleanSetting("Mobs", true);
     private final ColorSetting color = new ColorSetting("Color", 0xFF3882F6);
     private final NumberSetting lineWidth = new NumberSetting("Line Width", 1.5, 0.5, 3.0, 0.1);
-    private final BooleanSetting invisibles = new BooleanSetting("Invisible Players", false);
+    private final BooleanSetting invisibles = new BooleanSetting("Invisibles", false);
     private final BooleanSetting distanceFade = new BooleanSetting("Distance Color Fade", true);
 
     public Tracers() {
-        super("Tracers", "Draws lines toward nearby players", Category.RENDER);
-        addSettings(color, lineWidth, invisibles, distanceFade);
+        super("Tracers", "Draws lines toward nearby players and mobs", Category.RENDER);
+        addSettings(players, mobs, color, lineWidth, invisibles, distanceFade);
     }
 
     @EventTarget
@@ -35,20 +40,27 @@ public class Tracers extends Module {
         Vec3 forward = mc.player.getViewVector(pt);
         Vec3 start = event.getCameraState().pos.add(forward.scale(0.5));
 
-        for (Player player : mc.level.players()) {
-            if (player == mc.player || !player.isAlive() || AntiBot.isBot(player)) continue;
-            if (player.isInvisible() && !invisibles.isEnabled()) continue;
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (!(entity instanceof LivingEntity living) || living == mc.player || !living.isAlive()) continue;
+            if (living instanceof ArmorStand || living.getId() == -1337) continue;
+            if (living.isInvisible() && !invisibles.isEnabled()) continue;
 
-            double px = player.xo + (player.getX() - player.xo) * pt;
-            double py = player.yo + (player.getY() - player.yo) * pt + player.getBbHeight() * 0.5;
-            double pz = player.zo + (player.getZ() - player.zo) * pt;
+            if (living instanceof Player player) {
+                if (!players.isEnabled() || AntiBot.isBot(player)) continue;
+            } else if (!mobs.isEnabled()) {
+                continue;
+            }
+
+            double px = living.xo + (living.getX() - living.xo) * pt;
+            double py = living.yo + (living.getY() - living.yo) * pt + living.getBbHeight() * 0.5;
+            double pz = living.zo + (living.getZ() - living.zo) * pt;
 
             int col;
             if (distanceFade.isEnabled()) {
-                float dist = mc.player.distanceTo(player);
+                float dist = mc.player.distanceTo(living);
                 float t = Math.max(0.0F, Math.min(1.0F, dist / 60.0F));
                 col = ColorUtil.interpolateColor(0xFFEF4444, 0xFF10B981, t);
-            } else if (Teams.isTeammate(player)) {
+            } else if (living instanceof Player player && Teams.isTeammate(player)) {
                 col = 0xFF10B981;
             } else {
                 col = color.getRGB();

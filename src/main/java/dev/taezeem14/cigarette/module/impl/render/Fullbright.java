@@ -16,7 +16,7 @@ public class Fullbright extends Module {
     @Override
     public void onEnable() {
         if (mc.gameSettings != null) {
-            previousGamma = mc.gameSettings.gammaSetting;
+            previousGamma = mc.gameSettings.gammaSetting < 10.0f ? mc.gameSettings.gammaSetting : 1.0f;
             mc.gameSettings.gammaSetting = 1000.0f;
         }
     }
@@ -24,7 +24,7 @@ public class Fullbright extends Module {
     @Override
     public void onDisable() {
         if (mc.gameSettings != null) {
-            mc.gameSettings.gammaSetting = previousGamma;
+            mc.gameSettings.gammaSetting = previousGamma < 10.0f ? previousGamma : 1.0f;
         }
     }
 

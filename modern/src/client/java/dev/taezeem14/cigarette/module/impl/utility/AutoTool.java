@@ -20,7 +20,7 @@ public class AutoTool extends Module {
     private boolean mining = false;
 
     public AutoTool() {
-        super("AutoTool", "Automatically switches to the optimal tool when mining", Category.UTILITY);
+        super("AutoTool", "Automatically switches to the optimal tool when mining", Category.WORLD);
         addSettings(switchBack);
     }
 

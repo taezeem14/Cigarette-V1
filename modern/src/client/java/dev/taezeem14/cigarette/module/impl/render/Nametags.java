@@ -14,6 +14,8 @@ import dev.taezeem14.cigarette.util.render.RenderUtil;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -25,6 +27,8 @@ public class Nametags extends Module {
 
     private static final DecimalFormat HP_FMT = new DecimalFormat("0.#");
 
+    private final BooleanSetting players = new BooleanSetting("Players", true);
+    private final BooleanSetting mobs = new BooleanSetting("Mobs", true);
     private final BooleanSetting showDistance = new BooleanSetting("Distance", true);
     private final BooleanSetting showHealth = new BooleanSetting("Health", true);
     private final BooleanSetting showItems = new BooleanSetting("Armor & Items", true);
@@ -32,14 +36,19 @@ public class Nametags extends Module {
 
     public Nametags() {
         super("Nametags", "Renders clean HUD-projected nametags with health and equipment", Category.RENDER);
-        addSettings(showDistance, showHealth, showItems, scaleFactor);
+        addSettings(players, mobs, showDistance, showHealth, showItems, scaleFactor);
     }
 
     public static boolean shouldCancelVanillaNametag(Entity entity) {
-        if (!(entity instanceof Player) || entity == mc.player) return false;
+        if (!(entity instanceof LivingEntity living) || living == mc.player) return false;
+        if (living instanceof ArmorStand || living.getId() == -1337) return false;
         if (CigaretteModernClient.getInstance() != null && CigaretteModernClient.getInstance().getModuleManager() != null) {
             Nametags n = CigaretteModernClient.getInstance().getModuleManager().getModuleByClass(Nametags.class);
-            return n != null && n.isEnabled();
+            if (n == null || !n.isEnabled()) return false;
+            if (living instanceof Player player) {
+                return n.players.isEnabled() && !AntiBot.isBot(player);
+            }
+            return n.mobs.isEnabled();
         }
         return false;
     }
@@ -52,22 +61,29 @@ public class Nametags extends Module {
         int screenW = event.getScreenWidth();
         int screenH = event.getScreenHeight();
 
-        for (Player player : mc.level.players()) {
-            if (player == mc.player || !player.isAlive() || AntiBot.isBot(player)) continue;
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (!(entity instanceof LivingEntity living) || living == mc.player || !living.isAlive()) continue;
+            if (living instanceof ArmorStand || living.getId() == -1337) continue;
 
-            double ix = player.xo + (player.getX() - player.xo) * pt;
-            double iy = player.yo + (player.getY() - player.yo) * pt + player.getBbHeight() + 0.55;
-            double iz = player.zo + (player.getZ() - player.zo) * pt;
+            if (living instanceof Player player) {
+                if (!players.isEnabled() || AntiBot.isBot(player)) continue;
+            } else if (!mobs.isEnabled()) {
+                continue;
+            }
+
+            double ix = living.xo + (living.getX() - living.xo) * pt;
+            double iy = living.yo + (living.getY() - living.yo) * pt + living.getBbHeight() + 0.55;
+            double iz = living.zo + (living.getZ() - living.zo) * pt;
 
             float[] pos = FrustumUtil.projectToScreen(ix, iy, iz, screenW, screenH);
             if (pos == null) continue;
 
-            float dist = mc.player.distanceTo(player);
+            float dist = mc.player.distanceTo(living);
             StringBuilder sb = new StringBuilder();
             if (showDistance.isEnabled()) sb.append("\u00a77[").append((int) dist).append("m] ");
-            sb.append(player.getName().getString());
+            sb.append(living.getName().getString());
             if (showHealth.isEnabled()) {
-                float hp = player.getHealth() + player.getAbsorptionAmount();
+                float hp = living.getHealth() + living.getAbsorptionAmount();
                 sb.append(" \u00a7f[").append(HP_FMT.format(hp)).append("]");
             }
             String text = sb.toString();
@@ -86,19 +102,19 @@ public class Nametags extends Module {
             RenderUtil.drawRoundedOutline(g, tagX, tagY, tagW, tagH, 2.5F, 1.0F, ColorUtil.BORDER);
 
             if (showHealth.isEnabled()) {
-                float maxHp = Math.max(1.0F, player.getMaxHealth());
-                int hpCol = ColorUtil.getHealthColor(player.getHealth(), maxHp);
-                float ratio = Math.max(0.0F, Math.min(1.0F, player.getHealth() / maxHp));
+                float maxHp = Math.max(1.0F, living.getMaxHealth());
+                int hpCol = ColorUtil.getHealthColor(living.getHealth(), maxHp);
+                float ratio = Math.max(0.0F, Math.min(1.0F, living.getHealth() / maxHp));
                 RenderUtil.drawRect(g, tagX + 1.0F, tagY + tagH - 1.5F, (tagW - 2.0F) * ratio, 1.5F, hpCol);
             }
             RenderUtil.drawText(g, text, tagX + 5.0F, tagY + (tagH - RenderUtil.getFontHeight()) / 2.0F, ColorUtil.TEXT_PRIMARY, true);
 
             if (showItems.isEnabled()) {
                 List<ItemStack> gear = new ArrayList<>();
-                ItemStack main = player.getMainHandItem();
+                ItemStack main = living.getMainHandItem();
                 if (!main.isEmpty()) gear.add(main);
                 for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-                    ItemStack armor = player.getItemBySlot(slot);
+                    ItemStack armor = living.getItemBySlot(slot);
                     if (!armor.isEmpty()) gear.add(armor);
                 }
                 if (!gear.isEmpty()) {

@@ -554,7 +554,29 @@ public final class RenderUtil {
         color(color);
         GL11.glLineWidth(1.35F);
 
-        if ("combat".equals(key)) {
+        if ("logo".equals(key) || "cigarette".equals(key)) {
+            // Stylized Cigarette V1 ember icon: filter + body + glowing ember tip + smoke wisps
+            GL11.glBegin(GL11.GL_LINE_LOOP);
+            GL11.glVertex2f(x + 1.0f * s, y + 6.8f * s);
+            GL11.glVertex2f(x + 8.6f * s, y + 6.8f * s);
+            GL11.glVertex2f(x + 8.6f * s, y + 9.4f * s);
+            GL11.glVertex2f(x + 1.0f * s, y + 9.4f * s);
+            GL11.glEnd();
+            drawGlLine(x + 3.6f * s, y + 6.8f * s, x + 3.6f * s, y + 9.4f * s);
+            color(0xFFFF5722);
+            GL11.glBegin(GL11.GL_QUADS);
+            GL11.glVertex2f(x + 9.2f * s, y + 9.4f * s);
+            GL11.glVertex2f(x + 11.0f * s, y + 9.4f * s);
+            GL11.glVertex2f(x + 11.0f * s, y + 6.8f * s);
+            GL11.glVertex2f(x + 9.2f * s, y + 6.8f * s);
+            GL11.glEnd();
+            color(color);
+            GL11.glBegin(GL11.GL_LINE_STRIP);
+            GL11.glVertex2f(x + 9.8f * s, y + 5.6f * s);
+            GL11.glVertex2f(x + 8.8f * s, y + 3.8f * s);
+            GL11.glVertex2f(x + 10.4f * s, y + 1.8f * s);
+            GL11.glEnd();
+        } else if ("combat".equals(key)) {
             drawGlCircleOutline(x + 6.0f * s, y + 6.0f * s, 4.0f * s);
             drawGlLine(x + 6.0f * s, y + 0.8f * s, x + 6.0f * s, y + 3.2f * s);
             drawGlLine(x + 6.0f * s, y + 8.8f * s, x + 6.0f * s, y + 11.2f * s);
@@ -581,10 +603,20 @@ public final class RenderUtil {
             GL11.glVertex2f(x + 1.0f * s, y + 6.0f * s);
             GL11.glEnd();
             drawGlCircleOutline(x + 6.0f * s, y + 6.0f * s, 1.6f * s);
-        } else if ("utility".equals(key) || "world".equals(key)) {
+        } else if ("utility".equals(key)) {
             drawGlCircleOutline(x + 8.3f * s, y + 3.7f * s, 2.3f * s);
             GL11.glLineWidth(1.9F);
             drawGlLine(x + 6.8f * s, y + 5.2f * s, x + 2.2f * s, y + 9.8f * s);
+        } else if ("world".equals(key)) {
+            drawGlCircleOutline(x + 6.0f * s, y + 6.0f * s, 4.6f * s);
+            drawGlLine(x + 1.4f * s, y + 6.0f * s, x + 10.6f * s, y + 6.0f * s);
+            drawGlLine(x + 6.0f * s, y + 1.4f * s, x + 6.0f * s, y + 10.6f * s);
+            GL11.glBegin(GL11.GL_LINE_LOOP);
+            for (int i = 0; i < 16; i++) {
+                double a = i * Math.PI * 2.0 / 16.0;
+                GL11.glVertex2f(x + (6.0f + (float) Math.cos(a) * 2.2f) * s, y + (6.0f + (float) Math.sin(a) * 4.5f) * s);
+            }
+            GL11.glEnd();
         } else if ("client".equals(key)) {
             GL11.glBegin(GL11.GL_LINE_LOOP);
             GL11.glVertex2f(x + 6.0f * s, y + 1.2f * s);

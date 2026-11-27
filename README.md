@@ -2,9 +2,9 @@
 
 # Cigarette V1
 
-**Open-Source Hybrid Ghost & Utility Client Modeled After Vape V4**
+**High-Performance Open-Source Hybrid Ghost, Utility & Multi-Version Minecraft Client**
 
-Natively engineered for **Minecraft `26.3` (Fabric)** and **Minecraft `1.8.9` (Forge)**
+Engineered natively for **Minecraft `1.8`–`1.8.9` (Forge)** and **Minecraft `1.21+` / `26.x` (Fabric)** — playable across **every Minecraft server `1.8+` through `26.x`**
 
 <p>
   <a href="https://github.com/taezeem14/Cigarette-V1/actions/workflows/build.yml">
@@ -13,7 +13,7 @@ Natively engineered for **Minecraft `26.3` (Fabric)** and **Minecraft `1.8.9` (F
   <a href="https://github.com/taezeem14/Cigarette-V1/releases/latest">
     <img src="https://img.shields.io/github/v/release/taezeem14/Cigarette-V1?style=for-the-badge&color=3882F6&label=Release" alt="Latest Release" />
   </a>
-  <img src="https://img.shields.io/badge/Minecraft-26.3%20Fabric%20%7C%201.8.9%20Forge-8B5CF6?style=for-the-badge" alt="Minecraft Versions" />
+  <img src="https://img.shields.io/badge/Minecraft-1.8%2B%20Forge%20%7C%201.21%E2%80%9326.x%20Fabric-8B5CF6?style=for-the-badge" alt="Minecraft Versions" />
   <a href="LICENSE">
     <img src="https://img.shields.io/github/license/taezeem14/Cigarette-V1?style=for-the-badge&color=10B981" alt="GPL-3.0 License" />
   </a>
@@ -22,10 +22,10 @@ Natively engineered for **Minecraft `26.3` (Fabric)** and **Minecraft `1.8.9` (F
 <p>
   <a href="#key-highlights">Highlights</a> •
   <a href="#supported-versions--compatibility">Compatibility</a> •
+  <a href="#standalone-launcher--companion-gui">Launcher GUI</a> •
   <a href="#installation--setup">Installation</a> •
   <a href="#in-game-controls">Controls</a> •
-  <a href="#module-reference">Modules</a> •
-  <a href="#architecture">Architecture</a> •
+  <a href="#module-reference">Modules (47)</a> •
   <a href="#building-from-source">Building</a>
 </p>
 
@@ -35,111 +35,89 @@ Natively engineered for **Minecraft `26.3` (Fabric)** and **Minecraft `1.8.9` (F
 
 ## Overview
 
-**Cigarette V1** is a dual-target, open-source Minecraft client built around a dark `#141416` **Vape V4** interface, deterministic combat/movement mathematics, and clean JSON profile management. Both the **Modern Fabric (`26.3`)** subproject and the **Legacy Forge (`1.8.9`)** root project ship all **41 modules** with zero proprietary DRM or telemetry.
+**Cigarette V1** is a dual-target, open-source Minecraft client featuring a custom **`#141418` Cigarette V1 dual-card ClickGUI**, an **executable Desktop Launcher & Multi-Version Companion App**, deterministic combat/movement mathematics, and live JSON profile synchronization. Both the **Legacy Forge (`1.8`–`1.8.9`)** root project and the **Modern Fabric (`1.21+` / `26.x`)** subproject ship all **47 real modules across 6 categories** with zero DRM, telemetry, or account locks.
 
 ### Key Highlights
 
-- **Dual Native Runtimes** — Separate production builds tailored to **Minecraft `26.3` Fabric** (Java 25, unobfuscated engine) and **Minecraft `1.8.9` Forge** (Java 8, classic PvP).
-- **Executable Background Desktop App & System Tray** — Double-click either `.jar` directly (`java -jar ...`) to open a Vape V4-styled companion GUI with crisp vector `fa-*` icons, **Hide to Background Tray** toggle, live Minecraft process detection, 1-click `.minecraft/mods/` installer, and real-time profile sync into running Minecraft.
-- **Vape V4 Replica UI** — Draggable, z-ordered multi-panel ClickGUI (`Right Shift`) with category `fa-*` vector icons, scissor-clipped setting drawers, top search & theme dock, GUI scale slider (`0.75x`–`1.50x`), interactive HUD snap editor, and 5 built-in presets (`Electric Blue`, `Ember Orange`, `Amethyst`, `Emerald`, `Rainbow`) plus custom RGB colors.
-- **Ghost & Blatant Precision** — Mouse-sensitivity GCD quantization, Box-Muller Gaussian click-interval jitter (`AutoClicker`), closest-point hitbox reach calculation, movement-fix yaw correction (`SilentAim`, `KillAura`), and `1.9+ Cooldown` awareness.
-- **Zero Lock-In** — Runs locally on the Official Launcher, Prism Launcher, MultiMC, Modrinth App, TLauncher, and SKLauncher with clean `SelfDestruct` state teardown.
+- **Signature Cigarette V1 In-Game UI** — Auto-fitting dual-card ClickGUI (`Right Shift`) with glowing Cigarette V1 ember branding, cross-category live search bar, category enabled/total counters, laptop/trackpad-friendly left-click keybind capture, hover-description status bar, HUD snap editor, and **7 accent themes** (`Electric Blue`, `Ember Orange`, `Amethyst`, `Emerald`, `Crimson Rose`, `Cyber Cyan`, `Rainbow`).
+- **Standalone Launcher & Companion Desktop GUI** — Double-click either `.jar` (`java -jar ...`) to launch **Cigarette V1 Desktop**: custom anti-aliased Java2D controls, interactive sliders/switches/keybinds for all 47 modules, 1-click **TLauncher / Prism / Official Launcher** starter, 1-click **ViaForge / ViaFabricPlus** multi-version protocol installer, and **Minimize to System Tray** background mode.
+- **47 Working Modules (Singleplayer & Multiplayer Ready)** — Every combat, movement, render, utility, and world module works out of the box against players, hostile mobs, and passive animals in Singleplayer, LAN, OptiFine (`HD U M5`), and Multiplayer servers.
+- **Playable Across Every Server `1.8+` – `26.x`** — Includes built-in `1.9+ Cooldown` weapon-recharge pacing in `KillAura` and `AutoClicker` plus 1-click **ViaForge / ViaFabricPlus** installation so a single setup connects to `1.8`, `1.12.2`, `1.16.5`, `1.20.x`, `1.21.x`, and `26.x` servers seamlessly.
+- **Fault-Tolerant Mixin + Forge Event Fallback** — Non-fatal Mixin configuration paired with an automatic `ForgeEventBridge` tick/render/input fallback ensures Cigarette V1 never crashes custom Forge or OptiFine setups.
 
 ---
 
 ## Supported Versions & Compatibility
 
-| Edition | Minecraft Version | Mod Loader | Required Java | Multi-Version Server Support | Release Asset |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Modern Edition** | **`26.3`** (`~26.3`) | **Fabric Loader `0.20.1+`** & **Fabric API** | **Java 25+** | Join `1.8`–`26.x` servers via **ViaFabricPlus** | `Cigarette-V1-*-mc26.3-fabric.jar` |
-| **Legacy PvP Edition** | **`1.8.9`** | **Forge `11.15.1.2318`** | **Java 8** | Join `1.7`–`26.x` servers via **ViaForge `4.4.0+4+1.8.9`** | `Cigarette-V1-*-mc1.8.9-forge.jar` |
+| Edition | Native Loader Range | Required Java | Multi-Version Server Protocol (`1.8` – `26.x`) | Release Asset |
+| :--- | :--- | :--- | :--- | :--- |
+| **Classic & Multi-Protocol Edition** | **Forge `1.8` – `1.8.9`** (incl. OptiFine) | **Java 8** | Join **`1.7` – `1.21.x` – `26.x`** servers via **ViaForge** (1-click install in Launcher GUI) | `Cigarette-V1-1.4.0-mc1.8.9-forge.jar` |
+| **Modern Native Edition** | **Fabric `1.21+` – `26.x`** (`Fabric API`) | **Java 21 / 25+** | Join **`1.8` – `26.x`** servers via **ViaFabricPlus** (1-click install in Launcher GUI) | `Cigarette-V1-1.4.0-mc26.3-fabric.jar` |
 
 ### Official, Cracked & Offline Launchers
 
-Cigarette V1 runs strictly client-side with **no** Mojang/Microsoft session verification, remote whitelist, or hardware lock.
+Cigarette V1 runs strictly client-side with **no** Mojang/Microsoft session verification, remote whitelist, or hardware lock:
 
 - **Singleplayer, LAN & Offline Servers (`online-mode=false`)**: Works out of the box with **TLauncher**, **SKLauncher**, **Prism Launcher (Offline)**, **MultiMC**, and the **Official Launcher**.
-- **Premium Servers (`online-mode=true`)**: Any server enforcing Mojang authentication (e.g., Hypixel) validates account session tokens server-side and rejects offline accounts regardless of installed mods.
+- **Premium Servers (`online-mode=true`)**: Servers enforcing Mojang session authentication validate accounts server-side independently of client mods.
 
 > [!IMPORTANT]
-> **Do not place the `1.8.9 Forge` JAR and the `26.3 Fabric` JAR in the same `mods/` directory.**
-> Use separate instances (recommended) or swap out the unused JAR whenever switching between `1.8.9` and `26.3`.
+> **Keep `1.8.9 Forge` JARs and `Fabric` JARs in separate `mods/` folders** (or swap out the unused JAR when switching loaders).
+
+---
+
+## Standalone Launcher & Companion GUI
+
+Every Cigarette V1 `.jar` is both a **Minecraft Mod** and a **Standalone Desktop Application**. Double-click the `.jar` or run:
+
+```bash
+java -jar Cigarette-V1-1.4.0-mc1.8.9-forge.jar
+```
+
+- **Dashboard & Quick Actions** — Live Minecraft JVM detection, 1-click **Install Mod to `.minecraft/mods/`**, **Open ClickGUI In-Game**, **Launch Minecraft Launcher** (auto-detects TLauncher, Prism, MultiMC, Modrinth, and Official Launcher), and **Hide to System Tray**.
+- **Full 47-Module Configurator** — Configure module toggles, number sliders, min/max range sliders, mode selectors, and keybinds outside or during gameplay, with sub-second `.bridge_sync` live reload into running Minecraft.
+- **Multi-Version `1.8+` – `26.x` Hub** — Scans installed launcher versions and downloads **ViaForge** or **ViaFabricPlus** directly from Modrinth into your `mods/` folder in one click.
 
 ---
 
 ## Installation & Setup
 
-Download the build matching your Minecraft version from **[GitHub Releases](https://github.com/taezeem14/Cigarette-V1/releases/latest)**:
-- **Latest Minecraft (`26.3`)**: Download **`Cigarette-V1-1.3.0-mc26.3-fabric.jar`** and **[Fabric API for `26.3`](https://modrinth.com/mod/fabric-api/versions?g=26.3)**.
-- **Classic PvP (`1.8.9`)**: Download **`Cigarette-V1-1.3.0-mc1.8.9-forge.jar`**.
+Download the latest release from **[GitHub Releases (`v1.4.0`)](https://github.com/taezeem14/Cigarette-V1/releases/latest)**:
+- **Minecraft `1.8`–`1.8.9` (Forge / ForgeOptiFine)**: Download **`Cigarette-V1-1.4.0-mc1.8.9-forge.jar`**.
+- **Minecraft `26.3` / Modern Fabric**: Download **`Cigarette-V1-1.4.0-mc26.3-fabric.jar`** and **[Fabric API](https://modrinth.com/mod/fabric-api)**.
 
 <details open>
-<summary><b>Prism Launcher / MultiMC (Recommended — Clean Isolated Instances)</b></summary>
+<summary><b>Quickest Setup (Using Built-In Cigarette V1 Launcher GUI)</b></summary>
 
-Prism Launcher keeps Java runtimes and `mods/` folders completely isolated per instance so you can keep **both** editions side by side without conflicts.
-
-1. Click **Add Instance** and choose either:
-   - **Minecraft `26.3`** with **Fabric (`0.20.1+`)**, or
-   - **Minecraft `1.8.9`** with **Forge (`11.15.1.2318`)**.
-2. Right-click the instance → **Edit → Mods**:
-   - **For `26.3`**: Use **Download mods** to add **Fabric API**, then click **Add file** and select `Cigarette-V1-1.3.0-mc26.3-fabric.jar`.
-   - **For `1.8.9`**: Click **Add file** and select `Cigarette-V1-1.3.0-mc1.8.9-forge.jar`.
-3. Open **Settings → Java** inside the instance:
-   - Set **Java 25+** for `26.3 Fabric`.
-   - Set **Java 8** for `1.8.9 Forge`.
-4. Click **Launch** (compatible with both Microsoft and Offline accounts).
+1. Double-click **`Cigarette-V1-1.4.0-mc1.8.9-forge.jar`** (or run `java -jar Cigarette-V1-1.4.0-mc1.8.9-forge.jar`).
+2. Select your Minecraft / TLauncher directory (auto-detected, e.g., `D:\Minecraft-launcher` or `%appdata%\.minecraft`) and click **Install to Mods**.
+3. *(Optional — Play on `1.9`–`1.21.x`–`26.x` servers)* Open the **Launcher & Versions** tab and click **Install ViaForge (1.8+ -> 26.x)**.
+4. Click **Launch Minecraft**, enter any Singleplayer world or Multiplayer server, and press **`Right Shift`**!
 
 </details>
 
 <details>
-<summary><b>TLauncher / SKLauncher (Cracked & Offline Launchers)</b></summary>
+<summary><b>TLauncher / SKLauncher Manual Setup</b></summary>
 
-#### A. Latest Minecraft (`26.3 Fabric`)
-1. Open the version selector at the bottom and pick **`Fabric 26.3`** (`Fabric Loader 0.20.1+`).
-2. Open **Settings (Gear Icon) → Java Path** and ensure the launcher uses **Java 25** ([Eclipse Temurin 25](https://adoptium.net/)).
-3. Open your `.minecraft/mods` directory:
-   - **Windows**: `Win + R` → `%appdata%\.minecraft\mods`
-   - **macOS**: `~/Library/Application Support/minecraft/mods`
-   - **Linux**: `~/.minecraft/mods`
-4. Copy **both** `Cigarette-V1-1.3.0-mc26.3-fabric.jar` and `fabric-api-*.jar` (`26.3`) into `mods/`.
-5. Ensure no `1.8.9` mods remain in `mods/`, select `Fabric 26.3`, and click **Enter the Game**.
-
-#### B. Classic PvP (`1.8.9 Forge`)
-1. Select **`Forge 1.8.9`** (`11.15.1.2318`) in the version selector.
-2. Open **Settings (Gear Icon) → Java Path** and point it to **Java 8** (`javaw.exe`).
-   > Minecraft `1.8.9` Forge fails to start if launched under Java 17, 21, or 25.
-3. Place `Cigarette-V1-1.3.0-mc1.8.9-forge.jar` into `.minecraft/mods/` (with no `26.3`/Fabric JARs present).
+#### A. Classic & Multi-Version (`Forge 1.8.9` / `ForgeOptiFine 1.8.9`)
+1. Select **`Forge 1.8.9`** or **`ForgeOptiFine 1.8.9`** in the launcher version list.
+2. Point **Settings → Java Path** to **Java 8** (`javaw.exe`).
+3. Drop `Cigarette-V1-1.4.0-mc1.8.9-forge.jar` into your launcher's `mods/` folder (remove any older `Cigarette-V1-*.jar`).
 4. Click **Enter the Game**.
 
-</details>
-
-<details>
-<summary><b>Official Minecraft Launcher</b></summary>
-
-#### A. Minecraft `26.3` (Fabric)
-1. Install **[Java 25 (Eclipse Temurin)](https://adoptium.net/)**.
-2. Run the official **[Fabric Installer](https://fabricmc.net/use/installer/)**, select **Minecraft `26.3`** (`Loader 0.20.1+`), and click **Install**.
-3. Drop `Cigarette-V1-1.3.0-mc26.3-fabric.jar` and **[Fabric API (`26.3`)](https://modrinth.com/mod/fabric-api/versions?g=26.3)** into `.minecraft/mods/`.
-4. Launch the **`fabric-loader-26.3`** installation.
-
-#### B. Minecraft `1.8.9` (Forge)
-1. Install **Java 8 (Eclipse Temurin 8)**.
-2. Run vanilla Minecraft **`1.8.9`** once, then close the game.
-3. Run the **[Forge `1.8.9-11.15.1.2318` Installer](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.8.9.html)** (**Install client**).
-4. Drop `Cigarette-V1-1.3.0-mc1.8.9-forge.jar` into `.minecraft/mods/`.
-5. In the Official Launcher, edit your `1.8.9-forge` profile → **More Options → Java Executable**, verify it points to Java 8 `javaw.exe`, and click **Play**.
+#### B. Modern Native (`Fabric 26.3`)
+1. Select **`Fabric 26.3`** (`Fabric Loader 0.20.1+`) and **Java 25** in launcher settings.
+2. Place `Cigarette-V1-1.4.0-mc26.3-fabric.jar` and `fabric-api-*.jar` into `mods/`.
+3. Click **Enter the Game**.
 
 </details>
 
 <details>
-<summary><b>ViaForge Setup (Join Modern 1.20 / 1.21 / 26.x Servers from 1.8.9 Forge)</b></summary>
+<summary><b>Prism Launcher / Official Launcher Setup</b></summary>
 
-1. Install **`1.8.9 Forge`** with `Cigarette-V1-1.3.0-mc1.8.9-forge.jar` in `mods/`.
-2. Add **[ViaForge `4.4.0+4+1.8.9`](https://modrinth.com/mod/viaforge)** to the same `mods/` directory.
-3. Choose your target server protocol version directly from the **Multiplayer** screen's **ViaForge** selector.
-
-> [!TIP]
-> On the native **`26.3 Fabric`** build, keep **KillAura → `1.9+ Cooldown`** enabled on modern combat servers for attack-gauge synchronization, or turn it off to use classic **APS** min/max sliders.
+1. Create an isolated instance for **`1.8.9` + Forge (`11.15.1.2318`, Java 8)** or **`26.3` + Fabric (`0.20.1+`, Java 25)**.
+2. Add the matching `Cigarette-V1-1.4.0-*.jar` to the instance's `mods/` folder (plus `Fabric API` on Fabric).
+3. Launch the instance and press **`Right Shift`** in-game.
 
 </details>
 
@@ -149,41 +127,41 @@ Prism Launcher keeps Java runtimes and `mods/` folders completely isolated per i
 
 | Control / UI Element | Action |
 | :--- | :--- |
-| **`Right Shift`** (default) | Open / close the ClickGUI |
+| **`Right Shift`** or **`Insert`** | Open / close the Cigarette V1 ClickGUI |
 | **Left-Click** module row | Toggle module ON / OFF |
-| **Right-Click** module row | Expand / collapse module settings drawer |
-| **Middle-Click** module row | Enter keybind capture (`ESC`, `Delete`, or `Backspace` resets bind to `None`) |
-| **Top Dock → Search** | Real-time filter across all 41 modules |
-| **Top Dock → Theme** | Cycle presets (`Electric Blue`, `Ember Orange`, `Amethyst`, `Emerald`, `Rainbow`) |
-| **Top Dock → Scale** | Adjust GUI scale cleanly between `0.75x` and `1.50x` |
-| **Top Dock → Profiles** | Create, save, load, and delete JSON configurations |
-| **Top Dock → HUD Edit** | Drag-and-snap **Watermark**, **ArrayList**, and **TargetHUD** (`Right-Click` or `ESC` exits) |
+| **Click `⋮` icon** or **Right-Click** row | Expand / collapse module settings, **Keybind** row, and **Show in ArrayList** toggle |
+| **Click `Keybind` row** (or Middle-Click) | Capture any keyboard key (`ESC`, `Delete`, or `Backspace` clears to `None`) |
+| **Header Search Pill (`Search all...`)** | Instant cross-category filter across all 47 modules by name or description |
+| **Gear Icon (`⚙`) → Settings** | Switch between 7 themes, adjust GUI scale (`0.70x`–`1.25x`), toggle Gaussian blur, or toggle **`1.9+ Server Cooldown`** |
+| **Sidebar → `HUD Editor`** | Drag-and-snap **Watermark**, **ArrayList**, **TargetHUD**, and **Keystrokes** (`ESC` or Right-Click returns) |
 
 **Profile Storage Locations**
-- **1.8.9 Forge**: `.minecraft/cigarette/profiles/<name>.json`
-- **26.3 Fabric**: `.minecraft/Cigarette/profiles/<name>.json`
+- **Forge (`1.8.9`)**: `<minecraft-dir>/cigarette/profiles/<name>.json`
+- **Fabric (`26.3`)**: `<minecraft-dir>/Cigarette/profiles/<name>.json`
 
 ---
 
 ## Module Reference
 
-Cigarette V1 includes **41 modules** across 5 categories in both editions:
+Cigarette V1 ships **47 modules** across **6 categories**:
 
 | Category | Count | Summary |
 | :--- | :---: | :--- |
-| **Combat** | 9 | GCD aim smoothing, Gaussian autoclicking, reach, hitboxes, velocity, W-Tap, silent aim, utilities |
-| **Blatant** | 10 | KillAura (`AutoBlock` on `1.8.9` / `1.9+ Cooldown` on `26.3`), Scaffold, movement, packets, world safety |
-| **Render** | 10 | Vape V4 ClickGUI, HUD overlays, 2D/3D ESP, Chams, Nametags, Tracers, BedESP, Fullbright, Trajectories |
-| **Utility** | 9 | Inventory/chest automation, best-tool switching, bridge assist/eagle, antibot, team color matching |
-| **Client** | 3 | Active module ArrayList HUD, friend list management, clean `SelfDestruct` teardown |
+| **Combat** | 10 | GCD aim smoothing, Gaussian autoclicker, auto-sprint, reach, hitboxes, velocity, W-Tap, silent aim, utilities |
+| **Blatant** | 10 | KillAura (`AutoBlock` + `1.9+ Cooldown`), Scaffold, Speed, Fly, Criticals, NoSlow, KeepSprint, Blink, Timer, AntiVoid |
+| **Render** | 12 | Cigarette V1 ClickGUI, HUD (`FPS`/`CPS`/`BPS`), TargetHUD, Keystrokes, ArmorHUD, ESP, Chams, Nametags, Tracers, BedESP, Fullbright, Trajectories |
+| **Utility** | 5 | ChestStealer, InvManager, AutoArmor, AntiBot, Teams |
+| **World** | 7 | FastPlace, Eagle, BridgeAssist, AutoTool, NoFall, SpeedMine, Step |
+| **Client** | 3 | Active module ArrayList controller, FriendManager protection, clean `SelfDestruct` teardown |
 
-<details>
-<summary><b>Expand Complete 41-Module List</b></summary>
+<details open>
+<summary><b>Expand Complete 47-Module List</b></summary>
 
-- **Combat (9)**: `AimAssist`, `AutoClicker`, `Reach`, `HitBoxes`, `Velocity`, `WTap`, `SilentAim`, `ThrowPot`, `RodAimbot`
+- **Combat (10)**: `AimAssist`, `AutoClicker`, `Sprint`, `Reach`, `HitBoxes`, `Velocity`, `WTap`, `SilentAim`, `ThrowPot`, `RodAimbot`
 - **Blatant (10)**: `KillAura`, `Scaffold`, `Speed`, `Fly`, `Criticals`, `NoSlow`, `KeepSprint`, `Blink`, `Timer`, `AntiVoid`
-- **Render (10)**: `ClickGUI`, `HUD`, `TargetHUD`, `ESP`, `Chams`, `Nametags`, `Tracers`, `BedESP`, `Fullbright`, `Trajectories`
-- **Utility (9)**: `ChestStealer`, `InvManager`, `AutoTool`, `AutoArmor`, `FastPlace`, `Eagle`, `BridgeAssist`, `AntiBot`, `Teams`
+- **Render (12)**: `ClickGUI`, `HUD`, `TargetHUD`, `Keystrokes`, `ArmorHUD`, `ESP`, `Chams`, `Nametags`, `Tracers`, `BedESP`, `Fullbright`, `Trajectories`
+- **Utility (5)**: `ChestStealer`, `InvManager`, `AutoArmor`, `AntiBot`, `Teams`
+- **World (7)**: `FastPlace`, `Eagle`, `BridgeAssist`, `AutoTool`, `NoFall`, `SpeedMine`, `Step`
 - **Client (3)**: `ArrayList`, `FriendManager`, `SelfDestruct`
 
 </details>
@@ -194,60 +172,39 @@ Cigarette V1 includes **41 modules** across 5 categories in both editions:
 
 | Symptom | Likely Cause | Resolution |
 | :--- | :--- | :--- |
-| Crash on startup with `UnsupportedClassVersionError` or Exit Code `1` | Java version mismatch | Use **Java 8** for `1.8.9 Forge`; use **Java 25+** for `26.3 Fabric`. |
-| `ModResolutionException` / Mixin target failure | Incompatible JARs mixed inside `mods/` | Keep `1.8.9` JARs and `26.3` JARs in separate instances or directories. |
-| Missing `fabric-api` dependency popup | `Fabric API` not installed for `26.3` | Place **[Fabric API for `26.3`](https://modrinth.com/mod/fabric-api/versions?g=26.3)** in `.minecraft/mods/`. |
-| ClickGUI keybind unresponsive | Keybind changed or bound to another control | Inspect `ClickGUI` keybind in `.minecraft/Cigarette/profiles/default.json` or `cigarette/profiles/default.json`. |
-| `"Invalid session"` / `"Failed to verify username"` | Joining an `online-mode=true` server from an offline launcher | Cracked launchers can only join singleplayer, LAN, or `online-mode=false` servers. |
-| `LWJGLException: Pixel format not accelerated` (1.8.9 on Intel HD Windows 10) | Older Intel Sandy Bridge / HD Graphics OpenGL driver rejecting newer Java 8 builds | Set **Windows 7 / Windows 8 Compatibility Mode** on your Java 8 `javaw.exe` (or update graphics drivers). |
+| Crash on startup with `UnsupportedClassVersionError` | Java version mismatch | Use **Java 8** for `1.8.9 Forge`; use **Java 25+** for `26.3 Fabric`. |
+| `ModResolutionException` / Mixin conflict | Both `1.8.9` and `26.3` JARs placed in the same `mods/` folder | Keep only the JAR matching your active loader in `mods/`. |
+| Modules only target players or `AimAssist` pauses near grass | Older `v1.3.0` config cached in `default.json` | Update to **`v1.4.0`** (auto-enables mob targeting & non-blocking raytrace checks) or create a fresh profile in **Profiles**. |
+| `LWJGLException: Pixel format not accelerated` (1.8.9 on Intel HD Windows 10) | Legacy Intel HD OpenGL driver rejecting newer Java 8 builds | Use Eclipse Adoptium JDK `8u512` (or set Windows 7/8 compatibility on `javaw.exe`). |
 
 ---
 
 ## Architecture
 
-The codebase cleanly separates version-specific platform adapters while preserving identical user-facing behavior and module structure:
-
 ```text
 Cigarette-V1/
 ├── .github/workflows/                 # Dual CI matrix (Java 8 1.8.9 Forge + Java 25 26.3 Fabric) & Release automation
-├── build.gradle                       # Root build: Minecraft 1.8.9 Forge (ForgeGradle 2.1, MCP stable_22, JDK 8)
+├── build.gradle                       # Root build: Minecraft 1.8.9 Forge + Standalone Desktop Manifest
 ├── src/main/java/dev/taezeem14/cigarette/
 │   ├── Cigarette.java                 # Forge @Mod bootstrap, lifecycle hooks & BlurUtil teardown
-│   ├── agent/                         # Optional JVM Instrumentation agent fallback (AgentMain)
-│   ├── mixin/impl/                    # SpongePowered Mixin 0.7.11 hooks (MCP 1.8.9 SRG) + Access Transformer
-│   ├── module/impl/                   # 41 modules (incl. 1.8.9 Sword AutoBlock)
-│   └── ui/                            # LWJGL2 / OpenGL 1.1 ClickGUI, HUDEditor & GLSL ShaderGroup blur
+│   ├── desktop/                       # Standalone Cigarette V1 Launcher, Module Configurator & ViaForge Installer
+│   ├── forge/ForgeEventBridge.java    # Fault-tolerant Forge tick/render/input bridge
+│   ├── mixin/impl/                    # SpongePowered Mixin 0.7.11 hooks (MCP 1.8.9 SRG)
+│   ├── module/impl/                   # 47 modules across Combat, Blatant, Render, Utility, World & Client
+│   └── ui/                            # Cigarette V1 dual-card ClickGUI, HUDEditor & GLSL ShaderGroup blur
 │
 └── modern/                            # Standalone Gradle subproject: Minecraft 26.3 Fabric (Loom 1.19.4, JDK 25)
-    ├── build.gradle                   # Unobfuscated 26.3 Loom config + SplitEnvironmentSourceSets
+    ├── build.gradle                   # Unobfuscated 26.3 Loom config + Java 8 Desktop Launcher main-class
     └── src/
-        ├── main/resources/fabric.mod.json
-        └── client/
-            ├── resources/cigarette.client.mixins.json
-            └── java/dev/taezeem14/cigarette/
-                ├── CigaretteModernClient.java   # ClientModInitializer + Fabric API callbacks
-                ├── mixin/                       # 11 bytecode-verified Mixins targeting 26.3 Gui/Input/Entity/Net
-                ├── module/impl/                 # 41 modules ported to 26.3 (1.9+ Cooldown, DataComponents)
-                ├── ui/                          # GuiGraphicsExtractor UI, native stratum blur & SDL input
-                └── util/                        # Gizmos 3D renderer, CameraRenderState frustum projection, GCD math
+        ├── main/java/.../desktop/     # Shared Standalone Cigarette V1 Launcher & ViaFabricPlus Installer
+        └── client/java/.../           # 47 modules + GuiGraphicsExtractor Cigarette V1 ClickGUI & HUD
 ```
-
-### Engineering Design
-
-- **Priority Event Pipeline**: Annotation-driven `@EventTarget` dispatch ordered from `HIGHEST` to `LOWEST` across game ticks, pre/post motion phases, movement vectors, attack hooks, incoming/outgoing Netty packets, and 2D/3D render passes.
-- **Rotation & Input Quantization**: Yaw/pitch deltas are wrapped to `[-180, 180]` and snapped to the exact mouse-sensitivity GCD step (`0.15f` cubic factor `× 8`), paired with camera-relative movement vector correction (`MixinKeyboardInput` / `MixinEntityPlayerSP`).
-- **26.3 Unobfuscated Adaptation**: Replaced legacy `LWJGL2` / `OpenGL 1.1` / `Minecraft.screen` patterns with Mojang's `26.3` API (`Gui.screen()`, `GuiGraphicsExtractor`, `blurBeforeThisStratum()`, SDL `InputConstants.Type.KEYBOARD`, `ItemTags.SWORDS`, `DataComponents`, and `LevelRenderEvents.BEFORE_GIZMOS`).
 
 ---
 
 ## Building from Source
 
-### Prerequisites
-
-- **Minecraft `1.8.9` (Forge)**: **JDK 8** (e.g., Eclipse Temurin 8)
-- **Minecraft `26.3` (Fabric)**: **JDK 25** (e.g., Eclipse Temurin 25)
-
-### Build Minecraft `1.8.9` Forge (Repository Root)
+### Build Minecraft `1.8.9` Forge + Desktop Launcher (Repository Root — JDK 8)
 
 ```bash
 # Linux / macOS
@@ -257,9 +214,9 @@ Cigarette-V1/
 .\gradlew.bat setupCiWorkspace clean build --no-daemon
 ```
 
-> Output binary: `build/libs/Cigarette-V1-1.3.0.jar`
+> Output binary: `build/libs/Cigarette-V1-1.4.0.jar`
 
-### Build Minecraft `26.3` Fabric (`modern/`)
+### Build Minecraft `26.3` Fabric + Desktop Launcher (`modern/` — JDK 25)
 
 ```bash
 cd modern
@@ -271,7 +228,7 @@ cd modern
 .\gradlew.bat clean build --no-daemon
 ```
 
-> Output binary: `modern/build/libs/Cigarette-V1-1.3.0-mc26.3-fabric.jar`
+> Output binary: `modern/build/libs/Cigarette-V1-1.4.0-mc26.3-fabric.jar`
 
 ---
 

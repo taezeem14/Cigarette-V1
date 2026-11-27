@@ -16,6 +16,10 @@ import dev.taezeem14.cigarette.util.render.RenderUtil;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
@@ -24,15 +28,18 @@ import java.awt.Color;
 public class ESP extends Module {
 
     private final ModeSetting mode = new ModeSetting("Mode", "Full", "Full", "Corner", "Outline", "3D Box");
+    private final BooleanSetting players = new BooleanSetting("Players", true);
+    private final BooleanSetting mobs = new BooleanSetting("Mobs", true);
+    private final BooleanSetting animals = new BooleanSetting("Animals", true);
     private final BooleanSetting healthBar = new BooleanSetting("Health Bar", true);
     private final BooleanSetting armorBar = new BooleanSetting("Armor Bar", true);
-    private final BooleanSetting invisibles = new BooleanSetting("Invisible Players", false);
+    private final BooleanSetting invisibles = new BooleanSetting("Invisibles", false);
     private final ModeSetting colorMode = new ModeSetting("Color Mode", "Static", "Static", "Team", "Rainbow", "Astolfo");
     private final ColorSetting staticColor = new ColorSetting("Color", 0xFF3882F6);
 
     public ESP() {
-        super("ESP", "Renders 2D/3D projected bounding boxes and health bars on players", Category.RENDER);
-        addSettings(mode, healthBar, armorBar, invisibles, colorMode, staticColor);
+        super("ESP", "Renders 2D/3D projected bounding boxes and health bars on entities", Category.RENDER);
+        addSettings(mode, players, mobs, animals, healthBar, armorBar, invisibles, colorMode, staticColor);
     }
 
     @Override
@@ -44,15 +51,15 @@ public class ESP extends Module {
     public void onRender3D(Render3DEvent event) {
         if (!mode.is("3D Box") || mc.level == null || mc.player == null) return;
         float pt = event.getPartialTicks();
-        for (Player player : mc.level.players()) {
-            if (player == mc.player || !player.isAlive()) continue;
-            if (AntiBot.isBot(player) || (player.isInvisible() && !invisibles.isEnabled())) continue;
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (!shouldRender(entity)) continue;
+            LivingEntity living = (LivingEntity) entity;
 
-            double ix = player.xo + (player.getX() - player.xo) * pt;
-            double iy = player.yo + (player.getY() - player.yo) * pt;
-            double iz = player.zo + (player.getZ() - player.zo) * pt;
-            AABB box = player.getBoundingBox().move(ix - player.getX(), iy - player.getY(), iz - player.getZ());
-            int col = getEntityColor(player);
+            double ix = living.xo + (living.getX() - living.xo) * pt;
+            double iy = living.yo + (living.getY() - living.yo) * pt;
+            double iz = living.zo + (living.getZ() - living.zo) * pt;
+            AABB box = living.getBoundingBox().move(ix - living.getX(), iy - living.getY(), iz - living.getZ());
+            int col = getEntityColor(living);
             Gizmos.cuboid(box, GizmoStyle.strokeAndFill(col, 1.5F, ColorUtil.modifyAlpha(col, 40)));
         }
     }
@@ -64,11 +71,11 @@ public class ESP extends Module {
         int screenW = event.getScreenWidth();
         int screenH = event.getScreenHeight();
 
-        for (Player player : mc.level.players()) {
-            if (player == mc.player || !player.isAlive()) continue;
-            if (AntiBot.isBot(player) || (player.isInvisible() && !invisibles.isEnabled())) continue;
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (!shouldRender(entity)) continue;
+            LivingEntity living = (LivingEntity) entity;
 
-            float[] bounds = FrustumUtil.getEntityBounds2D(player, event.getPartialTicks(), screenW, screenH);
+            float[] bounds = FrustumUtil.getEntityBounds2D(living, event.getPartialTicks(), screenW, screenH);
             if (bounds == null) continue;
 
             float x = bounds[0];
@@ -77,7 +84,7 @@ public class ESP extends Module {
             float h = bounds[3] - bounds[1];
             if (w <= 0.0F || h <= 0.0F) continue;
 
-            int boxColor = getEntityColor(player);
+            int boxColor = getEntityColor(living);
             if (mode.is("Corner")) {
                 float lw = Math.max(2.0F, w / 4.0F);
                 float lh = Math.max(2.0F, h / 4.0F);
@@ -94,15 +101,15 @@ public class ESP extends Module {
             if (healthBar.isEnabled()) {
                 float barW = 2.0F;
                 float barX = x - barW - 3.0F;
-                float maxHp = Math.max(1.0F, player.getMaxHealth());
-                float ratio = Math.max(0.0F, Math.min(1.0F, player.getHealth() / maxHp));
+                float maxHp = Math.max(1.0F, living.getMaxHealth());
+                float ratio = Math.max(0.0F, Math.min(1.0F, living.getHealth() / maxHp));
                 float barH = h * ratio;
                 RenderUtil.drawRect(g, barX - 0.5F, y - 0.5F, barW + 1.0F, h + 1.0F, 0xAA000000);
-                RenderUtil.drawRect(g, barX, y + h - barH, barW, barH, ColorUtil.getHealthColor(player.getHealth(), maxHp));
+                RenderUtil.drawRect(g, barX, y + h - barH, barW, barH, ColorUtil.getHealthColor(living.getHealth(), maxHp));
             }
 
             if (armorBar.isEnabled()) {
-                float armorRatio = Math.max(0.0F, Math.min(1.0F, player.getArmorValue() / 20.0F));
+                float armorRatio = Math.max(0.0F, Math.min(1.0F, living.getArmorValue() / 20.0F));
                 if (armorRatio > 0.0F) {
                     float barY = y + h + 2.5F;
                     RenderUtil.drawRect(g, x - 0.5F, barY - 0.5F, w + 1.0F, 3.0F, 0xAA000000);
@@ -110,6 +117,19 @@ public class ESP extends Module {
                 }
             }
         }
+    }
+
+    private boolean shouldRender(Entity entity) {
+        if (!(entity instanceof LivingEntity living) || living == mc.player || !living.isAlive()) return false;
+        if (living instanceof ArmorStand || living.getId() == -1337) return false;
+        if (living.isInvisible() && !invisibles.isEnabled()) return false;
+        if (living instanceof Player player) {
+            return players.isEnabled() && !AntiBot.isBot(player);
+        }
+        if (living instanceof Animal) {
+            return animals.isEnabled();
+        }
+        return mobs.isEnabled();
     }
 
     private void drawCorners(GuiGraphicsExtractor g, float x, float y, float w, float h, float lw, float lh, int col) {
@@ -123,14 +143,17 @@ public class ESP extends Module {
         RenderUtil.drawRect(g, x + w - 1.0F, y + h - lh, 1.0F, lh, col);
     }
 
-    private int getEntityColor(Player player) {
+    private int getEntityColor(LivingEntity entity) {
         switch (colorMode.getMode().toLowerCase()) {
             case "team":
-                return Teams.isTeammate(player) ? 0xFF10B981 : 0xFFEF4444;
+                if (entity instanceof Player player) {
+                    return Teams.isTeammate(player) ? 0xFF10B981 : 0xFFEF4444;
+                }
+                return entity instanceof Animal ? 0xFF10B981 : 0xFFEF4444;
             case "rainbow":
-                return ColorUtil.getRainbow(4, player.getId() * 100);
+                return ColorUtil.getRainbow(4, entity.getId() * 100);
             case "astolfo": {
-                float hue = ((System.currentTimeMillis() + player.getId() * 100L) % 3000L) / 3000.0F;
+                float hue = ((System.currentTimeMillis() + entity.getId() * 100L) % 3000L) / 3000.0F;
                 hue = hue > 0.5F ? 1.0F - hue : hue;
                 return 0xFF000000 | (Color.HSBtoRGB(hue + 0.5F, 0.6F, 1.0F) & 0x00FFFFFF);
             }

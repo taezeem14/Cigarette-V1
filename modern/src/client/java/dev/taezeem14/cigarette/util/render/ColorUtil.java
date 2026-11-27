@@ -11,6 +11,8 @@ public final class ColorUtil {
     public static final int EMBER_ORANGE = 0xFFFF5722;
     public static final int AMETHYST = 0xFF8B5CF6;
     public static final int EMERALD = 0xFF10B981;
+    public static final int CRIMSON_ROSE = 0xFFF43F5E;
+    public static final int CYBER_CYAN = 0xFF06B6D4;
     public static final int BORDER = 0xFF27272A;
     public static final int TEXT_PRIMARY = 0xFFEBEBEF;
     public static final int TEXT_MUTED = 0xFF8E8E93;
@@ -20,6 +22,8 @@ public final class ColorUtil {
             "Ember Orange",
             "Amethyst",
             "Emerald",
+            "Crimson Rose",
+            "Cyber Cyan",
             "Rainbow"
     };
 
@@ -60,6 +64,10 @@ public final class ColorUtil {
             accentColor = AMETHYST;
         } else if ("Emerald".equals(themePreset)) {
             accentColor = EMERALD;
+        } else if ("Crimson Rose".equals(themePreset)) {
+            accentColor = CRIMSON_ROSE;
+        } else if ("Cyber Cyan".equals(themePreset)) {
+            accentColor = CYBER_CYAN;
         }
     }
 

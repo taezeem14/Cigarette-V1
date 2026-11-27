@@ -21,7 +21,7 @@ public class FastPlace extends Module {
     private final BooleanSetting projectilesOnly = new BooleanSetting("Projectiles Only", false);
 
     public FastPlace() {
-        super("FastPlace", "Removes right-click block placement and throwing delay", Category.UTILITY);
+        super("FastPlace", "Removes right-click block placement and throwing delay", Category.WORLD);
         addSettings(delay, blocksOnly, projectilesOnly);
     }
 

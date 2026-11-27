@@ -223,7 +223,13 @@ public final class RenderUtil {
         if (g == null || iconName == null) return;
         String key = iconName.toLowerCase(java.util.Locale.ROOT);
         float s = size / 10.0F;
-        if ("combat".equals(key)) {
+        if ("logo".equals(key) || "cigarette".equals(key)) {
+            drawRoundedOutline(g, x + 0.5F * s, y + 5.5F * s, 6.5F * s, 2.6F * s, 1.0F * s, 1.0F, color);
+            drawRect(g, x + 2.6F * s, y + 5.8F * s, 1.0F * s, 2.0F * s, color);
+            drawRect(g, x + 7.5F * s, y + 5.5F * s, 1.8F * s, 2.6F * s, 0xFFFF5722);
+            drawRect(g, x + 7.8F * s, y + 3.2F * s, 1.0F * s, 1.6F * s, color);
+            drawRect(g, x + 8.4F * s, y + 1.4F * s, 1.0F * s, 1.6F * s, color);
+        } else if ("combat".equals(key)) {
             drawRoundedOutline(g, x + 2.0F * s, y + 2.0F * s, 6.0F * s, 6.0F * s, 3.0F * s, 1.0F, color);
             drawRect(g, x + 4.5F * s, y + 0.5F * s, 1.0F, 2.0F * s, color);
             drawRect(g, x + 4.5F * s, y + 7.5F * s, 1.0F, 2.0F * s, color);
@@ -240,6 +246,16 @@ public final class RenderUtil {
             drawRoundedOutline(g, x + 5.2F * s, y + 1.2F * s, 3.6F * s, 3.6F * s, 1.8F * s, 1.0F, color);
             drawRect(g, x + 2.0F * s, y + 6.5F * s, 3.8F * s, 1.6F * s, color);
             drawRect(g, x + 4.2F * s, y + 4.5F * s, 1.8F * s, 2.8F * s, color);
+        } else if ("world".equals(key)) {
+            drawRoundedOutline(g, x + 1.0F * s, y + 1.0F * s, 8.0F * s, 8.0F * s, 4.0F * s, 1.0F, color);
+            drawRect(g, x + 1.2F * s, y + 4.6F * s, 7.6F * s, 1.0F, color);
+            drawRect(g, x + 4.6F * s, y + 1.2F * s, 1.0F, 7.6F * s, color);
+        } else if ("hud".equals(key)) {
+            drawRect(g, x + 1.2F * s, y + 2.2F * s, 7.6F * s, 1.0F, color);
+            drawRect(g, x + 1.2F * s, y + 4.8F * s, 7.6F * s, 1.0F, color);
+            drawRect(g, x + 1.2F * s, y + 7.4F * s, 7.6F * s, 1.0F, color);
+            drawCircle(g, x + 3.5F * s, y + 2.7F * s, 1.2F * s, color);
+            drawCircle(g, x + 6.5F * s, y + 5.3F * s, 1.2F * s, color);
         } else if ("client".equals(key)) {
             drawRoundedOutline(g, x + 2.0F * s, y + 1.5F * s, 6.0F * s, 7.0F * s, 2.0F * s, 1.0F, color);
             drawRect(g, x + 4.4F * s, y + 3.2F * s, 1.2F * s, 3.6F * s, color);

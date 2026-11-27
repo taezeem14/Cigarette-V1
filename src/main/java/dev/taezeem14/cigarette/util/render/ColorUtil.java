@@ -18,12 +18,16 @@ public final class ColorUtil {
     public static final int ACCENT_EMBER_ORANGE = 0xFFFF5722;
     public static final int ACCENT_AMETHYST = 0xFF8B5CF6;
     public static final int ACCENT_EMERALD = 0xFF10B981;
+    public static final int ACCENT_CRIMSON_ROSE = 0xFFF43F5E;
+    public static final int ACCENT_CYBER_CYAN = 0xFF06B6D4;
 
     public static final String[] THEME_PRESETS = {
             "Electric Blue",
             "Ember Orange",
             "Amethyst",
             "Emerald",
+            "Crimson Rose",
+            "Cyber Cyan",
             "Rainbow"
     };
 
@@ -70,6 +74,14 @@ public final class ColorUtil {
             case "emerald":
                 themePreset = "Emerald";
                 activeAccent = ACCENT_EMERALD;
+                break;
+            case "crimson rose":
+                themePreset = "Crimson Rose";
+                activeAccent = ACCENT_CRIMSON_ROSE;
+                break;
+            case "cyber cyan":
+                themePreset = "Cyber Cyan";
+                activeAccent = ACCENT_CYBER_CYAN;
                 break;
             case "rainbow":
                 themePreset = "Rainbow";

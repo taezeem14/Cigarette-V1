@@ -48,6 +48,7 @@ public abstract class MixinMinecraft {
 
     @Inject(method = "runTick", at = @At("HEAD"))
     private void onRunTickPre(CallbackInfo ci) {
+        dev.taezeem14.cigarette.forge.ForgeEventBridge.lastMixinTickTime = System.currentTimeMillis();
         if (Cigarette.INSTANCE != null && !Cigarette.INSTANCE.isDestructed() && Cigarette.INSTANCE.getEventBus() != null) {
             Cigarette.INSTANCE.getEventBus().post(new TickEvent(EventState.PRE));
         }

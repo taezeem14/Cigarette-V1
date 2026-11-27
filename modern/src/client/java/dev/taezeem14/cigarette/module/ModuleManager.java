@@ -23,6 +23,7 @@ public class ModuleManager {
         register(new HitBoxes());
         register(new Velocity());
         register(new WTap());
+        register(new Sprint());
         register(new SilentAim());
         register(new ThrowPot());
         register(new RodAimbot());
@@ -43,6 +44,8 @@ public class ModuleManager {
         register(new ClickGUIModule());
         register(new HUD());
         register(new TargetHUD());
+        register(new Keystrokes());
+        register(new ArmorHUD());
         register(new ESP());
         register(new Chams());
         register(new Nametags());
@@ -51,16 +54,21 @@ public class ModuleManager {
         register(new Fullbright());
         register(new Trajectories());
 
-        // Utility & World
+        // Utility
         register(new ChestStealer());
         register(new InvManager());
-        register(new AutoTool());
         register(new AutoArmor());
+        register(new AntiBot());
+        register(new Teams());
+
+        // World
+        register(new AutoTool());
         register(new FastPlace());
         register(new Eagle());
         register(new BridgeAssist());
-        register(new AntiBot());
-        register(new Teams());
+        register(new NoFall());
+        register(new SpeedMine());
+        register(new Step());
 
         // Client
         register(new ArrayListModule());

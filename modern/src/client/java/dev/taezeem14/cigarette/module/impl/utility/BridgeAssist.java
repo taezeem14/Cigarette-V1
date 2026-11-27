@@ -19,7 +19,7 @@ public class BridgeAssist extends Module {
     private final NumberSetting assistedPitch = new NumberSetting("Assisted Pitch", 78.0, 70.0, 85.0, 0.5);
 
     public BridgeAssist() {
-        super("BridgeAssist", "Assists crosshair alignment for fast bridging", Category.UTILITY);
+        super("BridgeAssist", "Assists crosshair alignment for fast bridging", Category.WORLD);
         addSettings(yawSnap, pitchAssist, assistedPitch);
     }
 

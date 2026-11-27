@@ -1,5 +1,5 @@
 {
-  "required": true,
+  "required": false,
   "package": "dev.taezeem14.cigarette.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
@@ -16,6 +16,6 @@
     "MixinPlayer"
   ],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   }
 }

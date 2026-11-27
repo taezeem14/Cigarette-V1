@@ -7,9 +7,12 @@ import dev.taezeem14.cigarette.module.Module;
 import dev.taezeem14.cigarette.module.impl.client.FriendManager;
 import dev.taezeem14.cigarette.module.impl.utility.AntiBot;
 import dev.taezeem14.cigarette.module.impl.utility.Teams;
+import dev.taezeem14.cigarette.setting.impl.BooleanSetting;
 import dev.taezeem14.cigarette.setting.impl.NumberSetting;
 import dev.taezeem14.cigarette.util.math.RotationUtil;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemFishingRod;
 import net.minecraft.item.ItemStack;
@@ -20,10 +23,11 @@ public class RodAimbot extends Module {
 
     private final NumberSetting range = new NumberSetting("Range", 12.0, 5.0, 20.0, 1.0);
     private final NumberSetting fov = new NumberSetting("FOV", 120.0, 15.0, 360.0, 5.0);
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", true);
 
     public RodAimbot() {
         super("RodAimbot", "Automatically predicts and aims rod throws at opponents", Category.COMBAT);
-        addSettings(range, fov);
+        addSettings(range, fov, targetMobs);
     }
 
     @Override
@@ -44,7 +48,7 @@ public class RodAimbot extends Module {
             return;
         }
 
-        EntityPlayer target = getBestTarget();
+        EntityLivingBase target = getBestTarget();
         if (target == null) return;
 
         double distance = mc.thePlayer.getDistanceToEntity(target);
@@ -65,24 +69,31 @@ public class RodAimbot extends Module {
         event.setPitch(MathHelper.clamp_float(rotations[1], -90.0F, 90.0F));
     }
 
-    private EntityPlayer getBestTarget() {
-        EntityPlayer best = null;
+    private EntityLivingBase getBestTarget() {
+        EntityLivingBase best = null;
         double bestDist = range.getValue();
 
         for (Entity entity : mc.theWorld.loadedEntityList) {
-            if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer) continue;
+            if (!(entity instanceof EntityLivingBase) || entity == mc.thePlayer) continue;
 
-            EntityPlayer player = (EntityPlayer) entity;
-            if (player.getEntityId() == -1337 || AntiBot.isBot(player)) continue;
-            if (player.isDead || player.getHealth() <= 0.0F || player.isInvisible()) continue;
-            if (FriendManager.isFriend(player.getName())) continue;
-            if (Teams.isTeammate(player)) continue;
+            EntityLivingBase living = (EntityLivingBase) entity;
+            if (living.getEntityId() == -1337 || living instanceof EntityArmorStand) continue;
+            if (living.isDead || living.getHealth() <= 0.0F || living.isInvisible()) continue;
 
-            double dist = mc.thePlayer.getDistanceToEntity(player);
+            if (living instanceof EntityPlayer) {
+                EntityPlayer player = (EntityPlayer) living;
+                if (AntiBot.isBot(player)) continue;
+                if (FriendManager.isFriend(player.getName())) continue;
+                if (Teams.isTeammate(player)) continue;
+            } else if (!targetMobs.isEnabled()) {
+                continue;
+            }
+
+            double dist = mc.thePlayer.getDistanceToEntity(living);
             if (dist > bestDist) continue;
-            if (!RotationUtil.isEntityInFov(player, fov.getValueFloat())) continue;
+            if (!RotationUtil.isEntityInFov(living, fov.getValueFloat())) continue;
 
-            best = player;
+            best = living;
             bestDist = dist;
         }
         return best;

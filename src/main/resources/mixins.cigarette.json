@@ -1,5 +1,5 @@
 {
-  "required": true,
+  "required": false,
   "minVersion": "0.7.11",
   "package": "dev.taezeem14.cigarette.mixin.impl",
   "refmap": "mixins.cigarette.refmap.json",
@@ -18,6 +18,6 @@
   "client": [
   ],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   }
 }

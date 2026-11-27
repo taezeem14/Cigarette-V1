@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Authoritative pure-JDK-8 metadata catalog for all 41 Cigarette V1 modules,
- * rich typed default settings, built-in themes, and edition-accurate keycode mapping.
+ * Authoritative pure-JDK-8 metadata catalog for all 47 Cigarette V1 modules,
+ * 6 categories, rich typed default settings, 7 built-in themes, and edition-accurate keycode mapping.
  */
 public final class DesktopCatalog {
 
@@ -26,6 +26,7 @@ public final class DesktopCatalog {
         BLATANT("Blatant", FaIcon.Glyph.BOLT),
         RENDER("Render", FaIcon.Glyph.EYE),
         UTILITY("Utility", FaIcon.Glyph.WRENCH),
+        WORLD("World", FaIcon.Glyph.GLOBE),
         CLIENT("Client", FaIcon.Glyph.SHIELD);
 
         private final String label;
@@ -114,6 +115,7 @@ public final class DesktopCatalog {
 
     public static final class ModuleDef {
         public final String name;
+        public final String altKey;
         public final String description;
         public final CategoryType category;
         public final boolean defaultEnabled;
@@ -125,7 +127,14 @@ public final class DesktopCatalog {
         public ModuleDef(String name, String description, CategoryType category, boolean defaultEnabled,
                          int defaultKeyCode189, int defaultKeyCode263,
                          List<SettingSpec> settings189, List<SettingSpec> settings263) {
+            this(name, null, description, category, defaultEnabled, defaultKeyCode189, defaultKeyCode263, settings189, settings263);
+        }
+
+        public ModuleDef(String name, String altKey, String description, CategoryType category, boolean defaultEnabled,
+                         int defaultKeyCode189, int defaultKeyCode263,
+                         List<SettingSpec> settings189, List<SettingSpec> settings263) {
             this.name = name;
+            this.altKey = altKey;
             this.description = description;
             this.category = category;
             this.defaultEnabled = defaultEnabled;
@@ -162,6 +171,12 @@ public final class DesktopCatalog {
             }
             return out;
         }
+
+        public boolean matchesKey(String key) {
+            if (key == null) return false;
+            if (name.equalsIgnoreCase(key)) return true;
+            return altKey != null && altKey.equalsIgnoreCase(key);
+        }
     }
 
     public static final String[] THEME_PRESETS = {
@@ -169,6 +184,8 @@ public final class DesktopCatalog {
             "Ember Orange",
             "Amethyst",
             "Emerald",
+            "Crimson Rose",
+            "Cyber Cyan",
             "Rainbow"
     };
 
@@ -177,15 +194,16 @@ public final class DesktopCatalog {
     static {
         List<ModuleDef> list = new ArrayList<ModuleDef>();
 
-        // ─── Combat (9) ───────────────────────────────────────────────────────
+        // ─── Combat (10) ──────────────────────────────────────────────────────
         List<SettingSpec> aimSettings = specs(
                 SettingSpec.number("Horizontal Speed", 3.5, 1.0, 10.0, 0.1),
                 SettingSpec.number("Vertical Speed", 2.0, 1.0, 10.0, 0.1),
                 SettingSpec.number("FOV", 90.0, 15.0, 360.0, 5.0),
                 SettingSpec.number("Distance", 4.5, 3.0, 6.0, 0.1),
-                SettingSpec.bool("Click Aim", true),
-                SettingSpec.bool("Weapon Only", true),
-                SettingSpec.bool("Aim Vertically", false),
+                SettingSpec.bool("Click Aim", false),
+                SettingSpec.bool("Weapon Only", false),
+                SettingSpec.bool("Aim Vertically", true),
+                SettingSpec.bool("Mobs", true),
                 SettingSpec.bool("Multipoint Hitbox", true),
                 SettingSpec.bool("Ignore Teams", true),
                 SettingSpec.bool("Break Blocks Check", true)
@@ -196,22 +214,27 @@ public final class DesktopCatalog {
                 specs(
                         SettingSpec.range("Left CPS", 11.5, 14.5, 1.0, 20.0, 0.1),
                         SettingSpec.range("Right CPS", 14.0, 18.0, 1.0, 20.0, 0.1),
+                        SettingSpec.bool("1.9+ Cooldown", false),
                         SettingSpec.bool("BlockHit", true),
                         SettingSpec.number("BlockHit Chance", 35.0, 0.0, 100.0, 5.0),
                         SettingSpec.number("Jitter Strength", 0.0, 0.0, 2.0, 0.1),
-                        SettingSpec.bool("Weapon Only", true),
+                        SettingSpec.bool("Weapon Only", false),
                         SettingSpec.bool("Break Blocks", true),
                         SettingSpec.bool("Inventory Fill", false)
                 ),
                 specs(
                         SettingSpec.range("Left CPS", 11.5, 14.5, 1.0, 20.0, 0.1),
                         SettingSpec.range("Right CPS", 14.0, 18.0, 1.0, 20.0, 0.1),
+                        SettingSpec.bool("1.9+ Cooldown", false),
                         SettingSpec.bool("BlockHit", true),
                         SettingSpec.number("BlockHit Chance", 35.0, 0.0, 100.0, 5.0),
                         SettingSpec.number("Jitter Strength", 0.0, 0.0, 2.0, 0.1),
-                        SettingSpec.bool("Weapon Only", true),
+                        SettingSpec.bool("Weapon Only", false),
                         SettingSpec.bool("Break Blocks", true)
                 )));
+
+        list.add(mod("Sprint", "Automatically maintains sprint while moving", CategoryType.COMBAT, true,
+                specs(SettingSpec.bool("Omni-Directional", false))));
 
         list.add(modSplit("Reach", "Closest-point entity interaction range extender", CategoryType.COMBAT, false,
                 specs(
@@ -254,7 +277,8 @@ public final class DesktopCatalog {
                         SettingSpec.number("FOV", 90.0, 15.0, 180.0, 5.0),
                         SettingSpec.number("Distance", 4.2, 3.0, 6.0, 0.1),
                         SettingSpec.number("Hit Chance", 100.0, 0.0, 100.0, 1.0),
-                        SettingSpec.mode("Movement Fix", "Silent", "Silent", "Strict", "None")
+                        SettingSpec.mode("Movement Fix", "Silent", "Silent", "Strict", "None"),
+                        SettingSpec.bool("Mobs", true)
                 )));
 
         list.add(mod("ThrowPot", "Rapid hotbar splash potion recovery thrower", CategoryType.COMBAT, false,
@@ -268,12 +292,14 @@ public final class DesktopCatalog {
         list.add(modSplit("RodAimbot", "Lead-compensated fishing rod trajectory assist", CategoryType.COMBAT, false,
                 specs(
                         SettingSpec.number("Range", 12.0, 5.0, 20.0, 1.0),
-                        SettingSpec.number("FOV", 120.0, 15.0, 360.0, 5.0)
+                        SettingSpec.number("FOV", 120.0, 15.0, 360.0, 5.0),
+                        SettingSpec.bool("Mobs", true)
                 ),
                 specs(
                         SettingSpec.number("FOV", 90.0, 15.0, 180.0, 5.0),
                         SettingSpec.number("Range", 12.0, 4.0, 20.0, 0.5),
-                        SettingSpec.bool("Velocity Prediction", true)
+                        SettingSpec.bool("Velocity Prediction", true),
+                        SettingSpec.bool("Mobs", true)
                 )));
 
         // ─── Blatant (10) ─────────────────────────────────────────────────────
@@ -281,6 +307,7 @@ public final class DesktopCatalog {
                 specs(
                         SettingSpec.mode("Target Mode", "Single", "Single", "Switch", "Multi"),
                         SettingSpec.mode("Sort Mode", "Distance", "Distance", "Health", "HurtTime", "FOV"),
+                        SettingSpec.bool("1.9+ Cooldown", false),
                         SettingSpec.range("APS", 10.0, 14.0, 1.0, 20.0, 0.5),
                         SettingSpec.number("Attack Range", 4.2, 3.0, 6.0, 0.1),
                         SettingSpec.number("Swing Range", 4.5, 3.0, 6.0, 0.1),
@@ -288,7 +315,7 @@ public final class DesktopCatalog {
                         SettingSpec.mode("Rotations", "Smooth", "Smooth", "Linear", "Instant"),
                         SettingSpec.bool("KeepSprint", true),
                         SettingSpec.bool("Players", true),
-                        SettingSpec.bool("Mobs", false),
+                        SettingSpec.bool("Mobs", true),
                         SettingSpec.bool("Invisibles", true)
                 ),
                 specs(
@@ -301,7 +328,7 @@ public final class DesktopCatalog {
                         SettingSpec.mode("Rotations", "Smooth", "Smooth", "Linear", "Instant"),
                         SettingSpec.bool("KeepSprint", true),
                         SettingSpec.bool("Players", true),
-                        SettingSpec.bool("Mobs", false),
+                        SettingSpec.bool("Mobs", true),
                         SettingSpec.bool("Invisibles", true)
                 )));
 
@@ -375,10 +402,10 @@ public final class DesktopCatalog {
                         SettingSpec.number("Fall Distance", 4.0, 2.0, 10.0, 0.5)
                 )));
 
-        // ─── Render (10) ──────────────────────────────────────────────────────
+        // ─── Render (12) ──────────────────────────────────────────────────────
         list.add(new ModuleDef(
                 "ClickGUI",
-                "Opens the in-game Vape V4 interface (Right Shift)",
+                "Opens the Cigarette V1 in-game interface (Right Shift)",
                 CategoryType.RENDER,
                 false,
                 KEY_RSHIFT_189,
@@ -394,7 +421,7 @@ public final class DesktopCatalog {
                 )
         ));
 
-        list.add(mod("HUD", "Renders the Cigarette watermark and active module ArrayList", CategoryType.RENDER, true,
+        list.add(mod("HUD", "Renders the Cigarette V1 watermark and active module ArrayList", CategoryType.RENDER, true,
                 specs(
                         SettingSpec.bool("Watermark", true),
                         SettingSpec.bool("ArrayList", true),
@@ -402,6 +429,19 @@ public final class DesktopCatalog {
                         SettingSpec.bool("Coordinates", true),
                         SettingSpec.bool("FPS Display", true),
                         SettingSpec.bool("CPS Display", true)
+                )));
+
+        list.add(mod("Keystrokes", "Displays live WASD, Space, and LMB/RMB CPS overlay", CategoryType.RENDER, true,
+                specs(
+                        SettingSpec.bool("Show CPS", true),
+                        SettingSpec.bool("Show Spacebar", true),
+                        SettingSpec.bool("Chroma Text", false)
+                )));
+
+        list.add(mod("ArmorHUD", "Displays equipped armor pieces and durability percentages", CategoryType.RENDER, true,
+                specs(
+                        SettingSpec.bool("Show Durability %", true),
+                        SettingSpec.bool("Show Held Item", true)
                 )));
 
         list.add(mod("TargetHUD", "Displays target health, armor, and distance card", CategoryType.RENDER, false,
@@ -414,6 +454,9 @@ public final class DesktopCatalog {
         list.add(modSplit("ESP", "2D/3D projected bounding boxes, health, and armor bars", CategoryType.RENDER, false,
                 specs(
                         SettingSpec.mode("Mode", "Full", "Full", "Corner", "Outline"),
+                        SettingSpec.bool("Players", true),
+                        SettingSpec.bool("Mobs", true),
+                        SettingSpec.bool("Animals", true),
                         SettingSpec.bool("Health Bar", true),
                         SettingSpec.bool("Armor Bar", true),
                         SettingSpec.bool("Invisible Players", false),
@@ -421,19 +464,26 @@ public final class DesktopCatalog {
                 ),
                 specs(
                         SettingSpec.mode("Mode", "Full", "Full", "Corner", "Outline", "3D Box"),
+                        SettingSpec.bool("Players", true),
+                        SettingSpec.bool("Mobs", true),
+                        SettingSpec.bool("Animals", true),
                         SettingSpec.bool("Health Bar", true),
                         SettingSpec.bool("Armor Bar", true),
                         SettingSpec.bool("Invisible Players", false),
                         SettingSpec.mode("Color Mode", "Static", "Static", "Team", "Rainbow", "Astolfo")
                 )));
 
-        list.add(modSplit("Chams", "Highlights player silhouettes cleanly through walls", CategoryType.RENDER, false,
+        list.add(modSplit("Chams", "Highlights entity silhouettes cleanly through walls", CategoryType.RENDER, false,
                 specs(
                         SettingSpec.mode("Mode", "Static", "Static", "Rainbow", "Team"),
+                        SettingSpec.bool("Players", true),
+                        SettingSpec.bool("Mobs", true),
                         SettingSpec.bool("Textured", true)
                 ),
                 specs(
-                        SettingSpec.mode("Mode", "Static", "Static", "Rainbow", "Team")
+                        SettingSpec.mode("Mode", "Static", "Static", "Rainbow", "Team"),
+                        SettingSpec.bool("Players", true),
+                        SettingSpec.bool("Mobs", true)
                 )));
 
         list.add(modSplit("Nametags", "Projects enhanced distance, health, and equipment tags", CategoryType.RENDER, false,
@@ -441,22 +491,28 @@ public final class DesktopCatalog {
                         SettingSpec.bool("Distance", true),
                         SettingSpec.bool("Health", true),
                         SettingSpec.bool("Armor & Items", true),
+                        SettingSpec.bool("Mobs", false),
                         SettingSpec.number("Scale", 1.8, 1.0, 3.5, 0.1)
                 ),
                 specs(
                         SettingSpec.bool("Distance", true),
                         SettingSpec.bool("Health", true),
                         SettingSpec.bool("Armor & Items", true),
+                        SettingSpec.bool("Mobs", false),
                         SettingSpec.number("Scale", 1.0, 0.7, 1.8, 0.05)
                 )));
 
-        list.add(modSplit("Tracers", "Draws color-coded lines toward nearby players", CategoryType.RENDER, false,
+        list.add(modSplit("Tracers", "Draws color-coded lines toward nearby entities", CategoryType.RENDER, false,
                 specs(
                         SettingSpec.mode("Color Mode", "Distance", "Distance", "Team", "Static", "Rainbow"),
+                        SettingSpec.bool("Players", true),
+                        SettingSpec.bool("Mobs", true),
                         SettingSpec.number("Line Width", 1.5, 0.5, 3.0, 0.1),
                         SettingSpec.bool("Invisible Players", false)
                 ),
                 specs(
+                        SettingSpec.bool("Players", true),
+                        SettingSpec.bool("Mobs", true),
                         SettingSpec.number("Line Width", 1.5, 0.5, 3.0, 0.1),
                         SettingSpec.bool("Invisible Players", false),
                         SettingSpec.bool("Distance Color Fade", true)
@@ -479,7 +535,7 @@ public final class DesktopCatalog {
                         SettingSpec.bool("Landing Box", true)
                 )));
 
-        // ─── Utility (9) ──────────────────────────────────────────────────────
+        // ─── Utility (5) ──────────────────────────────────────────────────────
         list.add(mod("ChestStealer", "Humanized chest looting with menu-title protection", CategoryType.UTILITY, false,
                 specs(
                         SettingSpec.range("Delay", 60.0, 100.0, 20.0, 300.0, 5.0),
@@ -497,39 +553,10 @@ public final class DesktopCatalog {
                         SettingSpec.bool("Open Inv Only", true)
                 )));
 
-        list.add(mod("AutoTool", "Selects optimal breaking tool per block hardness", CategoryType.UTILITY, false,
-                specs(SettingSpec.bool("Switch Back", true))));
-
         list.add(mod("AutoArmor", "Automatically equips highest-protection armor sets", CategoryType.UTILITY, false,
                 specs(
                         SettingSpec.range("Delay", 60.0, 120.0, 20.0, 300.0, 5.0),
                         SettingSpec.bool("Open Inv Only", false)
-                )));
-
-        list.add(mod("FastPlace", "Reduces right-click block and projectile placement delay", CategoryType.UTILITY, false,
-                specs(
-                        SettingSpec.number("Delay", 0.0, 0.0, 4.0, 1.0),
-                        SettingSpec.bool("Blocks Only", true),
-                        SettingSpec.bool("Projectiles Only", false)
-                )));
-
-        list.add(modSplit("Eagle", "Automatically sneaks over block edges while bridging", CategoryType.UTILITY, false,
-                specs(
-                        SettingSpec.range("Delay", 15.0, 40.0, 0.0, 100.0, 1.0),
-                        SettingSpec.bool("Blocks Only", true),
-                        SettingSpec.bool("Pitch Check (>65\u00B0)", true)
-                ),
-                specs(
-                        SettingSpec.range("Delay", 15.0, 40.0, 0.0, 100.0, 1.0),
-                        SettingSpec.bool("Blocks Only", true),
-                        SettingSpec.bool("Pitch Check (>65)", true)
-                )));
-
-        list.add(mod("BridgeAssist", "Edge alignment and smooth pitch assist for bridging", CategoryType.UTILITY, false,
-                specs(
-                        SettingSpec.mode("Yaw Snap", "45 Degrees", "45 Degrees", "90 Degrees", "None"),
-                        SettingSpec.bool("Pitch Assist", true),
-                        SettingSpec.number("Assisted Pitch", 78.0, 70.0, 85.0, 0.5)
                 )));
 
         list.add(mod("AntiBot", "Filters server NPC/watchdog decoys from targeting", CategoryType.UTILITY, false,
@@ -545,6 +572,51 @@ public final class DesktopCatalog {
                 specs(
                         SettingSpec.bool("Scoreboard Team", true),
                         SettingSpec.bool("Leather Armor Color", true)
+                )));
+
+        // ─── World (7) ────────────────────────────────────────────────────────
+        list.add(mod("FastPlace", "Reduces right-click block and projectile placement delay", CategoryType.WORLD, false,
+                specs(
+                        SettingSpec.number("Delay", 0.0, 0.0, 4.0, 1.0),
+                        SettingSpec.bool("Blocks Only", true),
+                        SettingSpec.bool("Projectiles Only", false)
+                )));
+
+        list.add(modSplit("Eagle", "Automatically sneaks over block edges while bridging", CategoryType.WORLD, false,
+                specs(
+                        SettingSpec.range("Delay", 15.0, 40.0, 0.0, 100.0, 1.0),
+                        SettingSpec.bool("Blocks Only", true),
+                        SettingSpec.bool("Pitch Check (>65\u00B0)", true)
+                ),
+                specs(
+                        SettingSpec.range("Delay", 15.0, 40.0, 0.0, 100.0, 1.0),
+                        SettingSpec.bool("Blocks Only", true),
+                        SettingSpec.bool("Pitch Check (>65)", true)
+                )));
+
+        list.add(mod("BridgeAssist", "Edge alignment and smooth pitch assist for bridging", CategoryType.WORLD, false,
+                specs(
+                        SettingSpec.mode("Yaw Snap", "45 Degrees", "45 Degrees", "90 Degrees", "None"),
+                        SettingSpec.bool("Pitch Assist", true),
+                        SettingSpec.number("Assisted Pitch", 78.0, 70.0, 85.0, 0.5)
+                )));
+
+        list.add(mod("AutoTool", "Selects optimal breaking tool per block hardness", CategoryType.WORLD, false,
+                specs(SettingSpec.bool("Switch Back", true))));
+
+        list.add(mod("NoFall", "Prevents fall damage using ground-state spoofing", CategoryType.WORLD, false,
+                specs(SettingSpec.mode("Mode", "Packet", "Packet", "NoGround"))));
+
+        list.add(mod("SpeedMine", "Accelerates block mining and eliminates break cooldown", CategoryType.WORLD, false,
+                specs(
+                        SettingSpec.number("Speed Multiplier", 1.35, 1.0, 2.5, 0.05),
+                        SettingSpec.bool("No Break Delay", true)
+                )));
+
+        list.add(mod("Step", "Automatically steps up full blocks seamlessly", CategoryType.WORLD, false,
+                specs(
+                        SettingSpec.number("Step Height", 1.0, 1.0, 2.5, 0.5),
+                        SettingSpec.mode("Mode", "Vanilla", "Vanilla", "Motion")
                 )));
 
         // ─── Client (3) ───────────────────────────────────────────────────────
@@ -565,7 +637,10 @@ public final class DesktopCatalog {
                         SettingSpec.bool("Slide Animation", true)
                 )));
 
-        list.add(mod("FriendManager", "Protects added friends from combat modules", CategoryType.CLIENT, true, specs()));
+        // Support both "Friends" (1.8.9 module key) and "FriendManager" seamlessly
+        list.add(new ModuleDef("FriendManager", "Friends", "Protects added friends from combat modules",
+                CategoryType.CLIENT, true, 0, 0, specs(), specs()));
+
         list.add(mod("SelfDestruct", "Tears down modules, keybinds, and overlays cleanly", CategoryType.CLIENT, false, specs()));
 
         MODULES = Collections.unmodifiableList(list);
@@ -594,7 +669,7 @@ public final class DesktopCatalog {
     public static ModuleDef findModule(String name) {
         if (name == null) return null;
         for (ModuleDef m : MODULES) {
-            if (m.name.equalsIgnoreCase(name)) {
+            if (m.matchesKey(name)) {
                 return m;
             }
         }
@@ -622,6 +697,8 @@ public final class DesktopCatalog {
         if ("Ember Orange".equalsIgnoreCase(preset)) return new Color(0xFF, 0x57, 0x22);
         if ("Amethyst".equalsIgnoreCase(preset)) return new Color(0x8B, 0x5C, 0xF6);
         if ("Emerald".equalsIgnoreCase(preset)) return new Color(0x10, 0xB9, 0x81);
+        if ("Crimson Rose".equalsIgnoreCase(preset)) return new Color(0xF4, 0x3F, 0x5E);
+        if ("Cyber Cyan".equalsIgnoreCase(preset)) return new Color(0x06, 0xB6, 0xD4);
         if ("Rainbow".equalsIgnoreCase(preset)) return new Color(0x38, 0xBD, 0xF8);
         return new Color(0x38, 0x82, 0xF6);
     }
@@ -815,6 +892,7 @@ public final class DesktopCatalog {
             case KeyEvent.VK_SHIFT: return location == KeyEvent.KEY_LOCATION_RIGHT ? 229 : 225;
             case KeyEvent.VK_CONTROL: return location == KeyEvent.KEY_LOCATION_RIGHT ? 228 : 224;
             case KeyEvent.VK_ALT: return location == KeyEvent.KEY_LOCATION_RIGHT ? 230 : 226;
+            case KeyEvent.VK_BACK_SPACE: return 42;
             case KeyEvent.VK_TAB: return 43;
             case KeyEvent.VK_SPACE: return 44;
             case KeyEvent.VK_ENTER: return 40;
@@ -833,6 +911,7 @@ public final class DesktopCatalog {
             case KeyEvent.VK_INSERT: return 73;
             case KeyEvent.VK_HOME: return 74;
             case KeyEvent.VK_PAGE_UP: return 75;
+            case KeyEvent.VK_DELETE: return 76;
             case KeyEvent.VK_END: return 77;
             case KeyEvent.VK_PAGE_DOWN: return 78;
             case KeyEvent.VK_RIGHT: return 79;
@@ -854,6 +933,7 @@ public final class DesktopCatalog {
             case KeyEvent.VK_0: return 11;
             case KeyEvent.VK_MINUS: return 12;
             case KeyEvent.VK_EQUALS: return 13;
+            case KeyEvent.VK_BACK_SPACE: return 14;
             case KeyEvent.VK_TAB: return 15;
             case KeyEvent.VK_Q: return 16;
             case KeyEvent.VK_W: return 17;
@@ -917,6 +997,7 @@ public final class DesktopCatalog {
             case KeyEvent.VK_DOWN: return 208;
             case KeyEvent.VK_PAGE_DOWN: return 209;
             case KeyEvent.VK_INSERT: return 210;
+            case KeyEvent.VK_DELETE: return 211;
             default: return 0;
         }
     }

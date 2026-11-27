@@ -11,19 +11,24 @@ import dev.taezeem14.cigarette.setting.impl.ModeSetting;
 import dev.taezeem14.cigarette.util.render.ColorUtil;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.boss.IBossDisplayData;
+import net.minecraft.entity.item.EntityArmorStand;
+import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import org.lwjgl.opengl.GL11;
 
 public class Chams extends Module {
 
+    private final BooleanSetting targetPlayers = new BooleanSetting("Players", true);
+    private final BooleanSetting targetMobs = new BooleanSetting("Mobs", true);
     private final ModeSetting mode = new ModeSetting("Mode", "Static", "Static", "Rainbow", "Team");
     private final ColorSetting hiddenColor = new ColorSetting("Hidden Color", 0xFFFF5722);
     private final ColorSetting visibleColor = new ColorSetting("Visible Color", 0xFF3882F6);
     private final BooleanSetting textured = new BooleanSetting("Textured", true);
 
     public Chams() {
-        super("Chams", "Renders entity player models visible through walls", Category.RENDER);
-        addSettings(mode, hiddenColor, visibleColor, textured);
+        super("Chams", "Renders entity models glowing through solid walls", Category.RENDER);
+        addSettings(targetPlayers, targetMobs, mode, hiddenColor, visibleColor, textured);
     }
 
     private static Chams getInstance() {
@@ -34,12 +39,16 @@ public class Chams extends Module {
     }
 
     public static boolean shouldChams(EntityLivingBase entity) {
-        if (entity == null || entity == mc.thePlayer) return false;
-        if (!(entity instanceof EntityPlayer)) return false;
-        if (entity.getEntityId() == -1337 || AntiBot.isBot(entity)) return false;
+        if (entity == null || entity == mc.thePlayer || entity.isDead) return false;
+        if (entity instanceof EntityArmorStand || entity.getEntityId() == -1337) return false;
 
         Chams chams = getInstance();
-        return chams != null && chams.isEnabled();
+        if (chams == null || !chams.isEnabled()) return false;
+
+        if (entity instanceof EntityPlayer) {
+            return chams.targetPlayers.isEnabled() && !AntiBot.isBot(entity);
+        }
+        return chams.targetMobs.isEnabled();
     }
 
     public static int getChamsColor(EntityLivingBase entity) {
@@ -52,22 +61,27 @@ public class Chams extends Module {
         if ("rainbow".equalsIgnoreCase(m)) {
             return ColorUtil.getRainbow(4, entity.getEntityId() * 100);
         }
-        if ("team".equalsIgnoreCase(m) && entity instanceof EntityPlayer) {
-            EntityPlayer player = (EntityPlayer) entity;
-            if (player.getTeam() != null) {
-                String formatted = player.getTeam().formatString(player.getName());
-                for (int i = 0; i < formatted.length() - 1; i++) {
-                    if (formatted.charAt(i) == '\u00a7') {
-                        char code = formatted.charAt(i + 1);
-                        if ("0123456789abcdef".indexOf(Character.toLowerCase(code)) != -1) {
-                            return 0xFF000000 | mc.fontRendererObj.getColorCode(code);
+        if ("team".equalsIgnoreCase(m)) {
+            if (entity instanceof EntityPlayer) {
+                EntityPlayer player = (EntityPlayer) entity;
+                if (player.getTeam() != null) {
+                    String formatted = player.getTeam().formatString(player.getName());
+                    for (int i = 0; i < formatted.length() - 1; i++) {
+                        if (formatted.charAt(i) == '\u00a7') {
+                            char code = formatted.charAt(i + 1);
+                            if ("0123456789abcdef".indexOf(Character.toLowerCase(code)) != -1) {
+                                return 0xFF000000 | mc.fontRendererObj.getColorCode(code);
+                            }
                         }
                     }
                 }
+                return Teams.isTeammate(player) ? 0xFF10B981 : 0xFFEF4444;
             }
-            return Teams.isTeammate(player) ? 0xFF10B981 : 0xFFEF4444;
+            return (entity instanceof IMob || entity instanceof IBossDisplayData) ? 0xFFEF4444 : 0xFF10B981;
         }
-        return chams.visibleColor.getRGB();
+
+        boolean directlyVisible = mc.thePlayer != null && mc.thePlayer.canEntityBeSeen(entity);
+        return directlyVisible ? chams.visibleColor.getRGB() : chams.hiddenColor.getRGB();
     }
 
     public static boolean isTexturedMode() {
@@ -88,25 +102,29 @@ public class Chams extends Module {
 
         GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
         GL11.glPolygonOffset(1.0F, -1100000.0F);
+        GlStateManager.disableDepth();
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GlStateManager.disableLighting();
 
         if (!isTexturedMode()) {
             GlStateManager.disableTexture2D();
-            GlStateManager.disableLighting();
-            applyChamsTint(getChamsColor(entity));
         }
+        applyChamsTint(getChamsColor(entity));
     }
 
     public static void postRenderCallback(EntityLivingBase entity) {
         if (!shouldChams(entity)) return;
 
         if (!isTexturedMode()) {
-            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-            GlStateManager.enableLighting();
             GlStateManager.enableTexture2D();
         }
 
+        GlStateManager.enableLighting();
+        GlStateManager.enableDepth();
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glPolygonOffset(1.0F, 1100000.0F);
         GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     public ColorSetting getHiddenColor() {
